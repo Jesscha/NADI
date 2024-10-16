@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Vite + React + TS Chrome Extension",
+  "name": "NADI",
   "version": "1.0.0",
-  "description": "A Chrome extension built with Vite, React, and TypeScript.",
+  "description": "The good flow",
   "action": {
     "default_popup": "index.html"
   },
@@ -10,6 +10,18 @@
     "service_worker": "assets/background.js"
   },
   "permissions": ["storage", "activeTab", "scripting"],
+  "content_security_policy": {
+    "content_security_policy": {
+      "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://firestore.googleapis.com https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com"
+    }
+  },
+  "oauth2": {
+    "client_id": "YOUR_GOOGLE_CLIENT_ID",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
+  },
   "chrome_url_overrides": {
     "newtab": "index.html"
   }
