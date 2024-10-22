@@ -9,10 +9,10 @@
   "background": {
     "service_worker": "assets/background.js"
   },
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": ["storage", "activeTab", "scripting", "offscreen"],
   "content_security_policy": {
     "content_security_policy": {
-      "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://firestore.googleapis.com https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com"
+      "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://firestore.googleapis.com https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://apis.google.com https://www.gstatic.com https://www.googleapis.com"
     }
   },
   "oauth2": {
@@ -26,4 +26,3 @@
     "newtab": "index.html"
   }
 }
-

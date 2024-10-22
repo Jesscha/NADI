@@ -1,6 +1,6 @@
 import{ useState } from 'react';
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
-import { getAuth, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
+import { getAuth, User, signInWithEmailAndPassword } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 
 console.log("started")
@@ -25,15 +25,23 @@ function App() {
   const [text, setText] = useState('');
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 
   const handleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    console.log("signing in", provider)
-    const result = await signInWithPopup(auth, provider);
-    console.log("signed in", result)
-    setUser(result.user);
-    setUserName(result.user.displayName);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      setUser(user);
+      setUserName(user.displayName);
+    } catch (error) {
+      console.error("Error signing in: ", error);
+    }
   };
+
+  fetch('https://jsonplaceholder.typicode.com/todos/1')
+      .then(response => response.json())
+      .then(json => console.log(json))
 
   const handleSubmit = async () => {
     if (text.length > 100) {
@@ -73,7 +81,21 @@ function App() {
           <button onClick={handleSubmit}>글 올리기</button>
         </div>
       ) : (
-        <button onClick={handleLogin}>구글 로그인</button>
+        <div>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="이메일 입력"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="비밀번호 입력"
+          />
+          <button onClick={handleLogin}>로그인</button>
+        </div>
       )}
     </div>
   );
