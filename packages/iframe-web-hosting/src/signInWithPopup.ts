@@ -1,6 +1,7 @@
 import { signInWithPopup, GoogleAuthProvider, getAuth } from'firebase/auth';
 import { initializeApp } from 'firebase/app';
-import firebaseConfig from './firebaseConfig.js'
+import { firebaseConfig } from './config/firebaseConfig';
+
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
