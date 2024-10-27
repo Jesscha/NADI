@@ -61,6 +61,7 @@ async function firebaseAuth() {
     .then((auth) => {
       console.log('User Authenticated', auth);
       chrome.runtime.sendMessage({ type: 'auth-success', authData: auth });
+      console.log("sent authenticated")
       return auth;
     })
     .catch(err => {
@@ -78,4 +79,14 @@ async function firebaseAuth() {
   return auth;
 }
 
-firebaseAuth();
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("onMessage in background", message)
+  if (message.type === 'trigger-firebase-auth') {
+    firebaseAuth().then((auth) => {
+      sendResponse({ success: true, auth });
+    }).catch((error) => {
+      sendResponse({ success: false, error });
+    });
+    return true; // Indicates that the response will be sent asynchronously
+  }
+});
