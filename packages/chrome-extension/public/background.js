@@ -49,7 +49,6 @@ function getAuth() {
       type: 'firebase-auth',
       target: 'offscreen'
     });
-    console.log('auth', auth);
     auth?.name !== 'FirebaseError' ? resolve(auth) : reject(auth);
   })
 }
@@ -61,6 +60,7 @@ async function firebaseAuth() {
   const auth = await getAuth()
     .then((auth) => {
       console.log('User Authenticated', auth);
+      chrome.runtime.sendMessage({ type: 'auth-success', authData: auth });
       return auth;
     })
     .catch(err => {
