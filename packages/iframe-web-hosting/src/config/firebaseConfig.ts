@@ -8,3 +8,5 @@ export const firebaseConfig = {
     appId: import.meta.env.VITE_FIREBASE_APP_ID,
   };
   
+
+  console.log(firebaseConfig);
