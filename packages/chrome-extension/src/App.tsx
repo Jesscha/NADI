@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDoc, doc, runTransaction } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDoc, doc, runTransaction, query, where, getDocs, updateDoc, arrayUnion } from "firebase/firestore";
 import React, { useEffect, useState } from 'react';
 
 
@@ -13,20 +13,16 @@ export const firebaseConfig = {
 };
 
 
- 
 const app = initializeApp(firebaseConfig);
-
-console.log(app);
 
 // Initialize Cloud Firestore and get a reference to the service
 const db = getFirestore(app);
-console.log(db);
+
 
 function uploadSentence(content: string, authorId: string) {
   return addDoc(collection(db, "sentences"), {
     content: content,
     authorId: authorId,
-    sharedWith: [],  // 공유될 유저 리스트
     likes: 0         // 좋아요 수
   }).then(docRef => {
     console.log("Document written with ID: ", docRef.id);
@@ -45,23 +41,21 @@ function getSentence(sentenceId: string) {
   });
 }
 
-function likeSentence(sentenceId: string) {
+async function likeSentence(sentenceId: string, userId: string) {
   const sentenceRef = doc(db, "sentences", sentenceId);
 
-  return runTransaction(db, transaction => {
-    return transaction.get(sentenceRef).then(doc => {
-      if (!doc.exists) {
-        throw "Document does not exist!";
-      }
-      // 좋아요 수 증가
-      const newLikes = (doc.data()?.likes || 0) + 1;
-      transaction.update(sentenceRef, { likes: newLikes });
+  await runTransaction(db, async (transaction) => {
+    const docSnapshot = await transaction.get(sentenceRef);
+    if (!docSnapshot.exists()) {
+      throw "Document does not exist!";
+    }
+    const newLikes = (docSnapshot.data()?.likes || 0) + 1;
+    transaction.update(sentenceRef, { 
+      likes: newLikes,
+      likedBy: arrayUnion(userId)  // Add userId to likedBy array
     });
-  }).then(() => {
-    console.log("Like added!");
-  }).catch(error => {
-    console.error("Transaction failed: ", error);
   });
+  console.log("Like added!");
 }
 
 
@@ -76,13 +70,31 @@ function getLikes(sentenceId: string) {
   });
 }
 
-navigator.serviceWorker.ready.then((registration) => {
-  registration!.active!.postMessage(
-    "Test message sent immediately after creation",
-  );
-});
-const SERVICE_WORKER = globalThis?.navigator?.serviceWorker || null;
+async function addLikeRecord(sentenceId: string, userId: string) {
+  await addDoc(collection(db, "likes"), {
+    sentenceId: sentenceId,
+    userId: userId,
+    timestamp: new Date()
+  });
+  console.log("Like record added!");
+}
 
+
+async function getSentencesByUser(userId: string) {
+  const q = query(collection(db, "sentences"), where("authorId", "==", userId));
+  const querySnapshot = await getDocs(q);
+  const sentences = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  console.log("Sentences by user:", sentences);
+  return sentences;
+}
+
+async function getLikedSentencesByUser(userId: string) {
+  const q = query(collection(db, "sentences"), where("likedBy", "array-contains", userId));
+  const querySnapshot = await getDocs(q);
+  const sentences = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  console.log("Sentences liked by user:", sentences);
+  return sentences;
+}
 
 function App() {
   const [authData, setAuthData] = useState<any>(null);
@@ -91,16 +103,11 @@ function App() {
 
   useEffect(() => {
     // Listen for messages from the background script
-    console.log("listening for auth messages...")
     chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       if (message.type === 'auth-success') {
         setAuthData(message.authData);
-        console.log('Received auth data:', message.authData);
-
         if (message.authData.user) {
           try {
-           
-            
           } catch (e) {
             console.error("Error adding document: ", e);
           }
@@ -112,10 +119,6 @@ function App() {
   }, []);
 
   const handleFirebaseAuth = () => {
-    // SERVICE_WORKER?.controller?.postMessage({
-    //   topic: "getSecretKey",
-    // });
-    console.log("triggering firebase auth...")
     chrome.runtime.sendMessage({ type: 'trigger-firebase-auth' }, (response) => {
       console.log('Response from background:', response);
     });
@@ -136,10 +139,25 @@ function App() {
   };
 
   const handleLikeSentence = async () => {
-    if (sentenceId) {
-      await likeSentence(sentenceId);
+    if (sentenceId && authData?.user) {
+      await likeSentence(sentenceId, authData.user.uid);
+      await addLikeRecord(sentenceId, authData.user.uid);
       const updatedLikes = await getLikes(sentenceId);
       setLikes(updatedLikes);
+    }
+  };
+
+  const handleGetSentencesByUser = async () => {
+    if (authData?.user) {
+      const sentences = await getSentencesByUser(authData.user.uid);
+      console.log("Sentences by user:", sentences);
+    }
+  };
+
+  const handleGetLikedSentencesByUser = async () => {
+    if (authData?.user) {
+      const sentences = await getLikedSentencesByUser(authData.user.uid);
+      console.log("Sentences liked by user:", sentences);
     }
   };
 
@@ -155,6 +173,8 @@ function App() {
       <button onClick={handleUploadSentence}>Upload Sentence</button>
       <button onClick={handleGetSentence}>Get Sentence</button>
       <button onClick={handleLikeSentence}>Like Sentence</button>
+      <button onClick={handleGetSentencesByUser}>Get My Sentences</button>
+      <button onClick={handleGetLikedSentencesByUser}>Get Liked Sentences</button>
       {likes !== null && <p>Likes: {likes}</p>}
     </div>
   );
