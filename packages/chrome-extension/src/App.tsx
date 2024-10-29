@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc, getDoc, doc, runTransaction, query, where, getDocs, updateDoc, arrayUnion } from "firebase/firestore";
 import React, { useEffect, useState } from 'react';
+import { Typer } from "./components/Typer";
 
 
 export const firebaseConfig = {
@@ -98,12 +99,14 @@ async function getLikedSentencesByUser(userId: string) {
 
 function App() {
   const [authData, setAuthData] = useState<any>(null);
-  const [sentenceId, setSentenceId] = useState<string | null>(null);
   const [likes, setLikes] = useState<number | null>(null);
+  const [randomSentence, setRandomSentence] = useState<string | null>(null);
+  const [randomSentenceId, setRandomSentenceId] = useState<string | null>(null);
+  const [userInput, setUserInput] = useState<string>("");
 
   useEffect(() => {
     // Listen for messages from the background script
-    chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+    chrome?.runtime?.onMessage?.addListener(async (message, sender, sendResponse) => {
       if (message.type === 'auth-success') {
         setAuthData(message.authData);
         if (message.authData.user) {
@@ -125,32 +128,11 @@ function App() {
   };
 
   const handleUploadSentence = async () => {
-    if (authData?.user) {
-      const id = await uploadSentence("Hello World", authData.user.uid);
-      setSentenceId(id);
-    }
-  };
-
-  const handleGetSentence = async () => {
-    if (sentenceId) {
-      const data = await getSentence(sentenceId);
-      console.log("Fetched sentence:", data);
-    }
-  };
-
-  const handleLikeSentence = async () => {
-    if (sentenceId && authData?.user) {
-      await likeSentence(sentenceId, authData.user.uid);
-      await addLikeRecord(sentenceId, authData.user.uid);
-      const updatedLikes = await getLikes(sentenceId);
-      setLikes(updatedLikes);
-    }
-  };
-
-  const handleGetSentencesByUser = async () => {
-    if (authData?.user) {
-      const sentences = await getSentencesByUser(authData.user.uid);
-      console.log("Sentences by user:", sentences);
+    if (authData?.user && userInput.trim()) {
+      await uploadSentence(userInput, authData.user.uid);
+      setUserInput(""); // Clear the input after uploading
+    } else {
+      console.log("User is not authenticated or input is empty.");
     }
   };
 
@@ -161,21 +143,55 @@ function App() {
     }
   };
 
+  const fetchRandomSentence = async () => {
+    const sentences = await getDocs(collection(db, "sentences"));
+    const randomIndex = Math.floor(Math.random() * sentences.docs.length);
+    const randomDoc = sentences.docs[randomIndex];
+    setRandomSentence(randomDoc.data().content);
+    setRandomSentenceId(randomDoc.id);
+  };
+
+  const handleUserInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUserInput(event.target.value);
+  };
+
+  const handleSubmitInput = async () => {
+    if (userInput === randomSentence && randomSentenceId && authData?.user) {
+      const updatedLikes = await getLikes(randomSentenceId);
+      setLikes(updatedLikes);
+      console.log("Correct input! Likes for the sentence:", updatedLikes);
+    } else {
+      console.log("Incorrect input. Try again.");
+    }
+  };
+
   return (
     <div>
-      <h1>Firebase Auth Data</h1>
-      {authData ? (
-        <pre>{JSON.stringify(authData, null, 2)}</pre>
+      <h1>Welcome</h1>
+      {authData?.user ? (
+        <p>User: {authData.user.displayName || "Anonymous"}</p>
       ) : (
-        <p>No auth data received yet.</p>
+        <p>No user authenticated.</p>
       )}
       <button onClick={handleFirebaseAuth}>Authenticate with Firebase</button>
+      <input
+        type="text"
+        value={userInput}
+        onChange={handleUserInput}
+        placeholder="Write your sentence here"
+      />
       <button onClick={handleUploadSentence}>Upload Sentence</button>
-      <button onClick={handleGetSentence}>Get Sentence</button>
-      <button onClick={handleLikeSentence}>Like Sentence</button>
-      <button onClick={handleGetSentencesByUser}>Get My Sentences</button>
       <button onClick={handleGetLikedSentencesByUser}>Get Liked Sentences</button>
+      <button onClick={fetchRandomSentence}>Show Random Sentence</button>
+      {randomSentence && (
+        <div>
+          <p>Type this sentence: {randomSentence}</p>
+          <input type="text" value={userInput} onChange={handleUserInput} />
+          <button onClick={handleSubmitInput}>Submit</button>
+        </div>
+      )}
       {likes !== null && <p>Likes: {likes}</p>}
+      <Typer />
     </div>
   );
 }
