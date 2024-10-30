@@ -64,7 +64,11 @@ export const Typer = ({originalText,onNextText} :{
 
     return (
         <div className='text-gray-300 flex flex-col items-center justify-center gap-[24px]'>
-            <h1 className='font-mono text-[30px] animate-ripple'>
+            <h1 className='font-mono text-[30px] animate-ripple'
+            style={{
+               filter: `url(#threshold) blur(0.6px)`,
+            }}
+            >
                 <span style={{
                     filter: `blur(${Math.min(8 / fraction - 8, 100)}px)`,
                     opacity: `${Math.pow(fraction, 0.4) * 100}%`
@@ -112,7 +116,16 @@ export const Typer = ({originalText,onNextText} :{
                         onClick={onNextText}>Like</button>
                 )}    
             </div>
-            
+            <svg id="filters">
+                <defs>
+                    <filter id="threshold">
+                        <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0
+									0 1 0 0 0
+									0 0 1 0 0
+									0 0 0 255 -140" />
+                    </filter>
+                </defs>
+            </svg>
         </div>
     );
 };
