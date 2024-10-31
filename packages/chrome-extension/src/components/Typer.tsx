@@ -84,7 +84,7 @@ export const Typer = ({originalText,onNextText} :{
                 tabIndex={-1}
                 className='absolute left-[-9999px]'
             />
-            <div className='flex gap-[5px]' onClick={()=>{
+            <div className='flex gap-[5px] overflow-visible' onClick={()=>{
                 if (inputRef.current) {
                     inputRef.current.focus();
                 }
@@ -93,11 +93,12 @@ export const Typer = ({originalText,onNextText} :{
                     <div 
                         key={index} 
                         className={classNames(
-                            "w-[10px] font-mono h-[30px] border-b-solid border-b-black border-b-[1px]", 
+                            "w-[10px] font-mono h-[30px] border-b-solid border-b-black border-b-[1px] overflow-visible", 
                             { 
-                                "animate-bounce": inputText[index], 
+                                "animate-bounce ripple": inputText[index], 
                                 "text-red-500": inputText[index] && inputText[index] !== char, // Add red color if not matching
                                 "animate-blink": index === inputText.length, // Add blinking cursor at the next position
+                                
                                 
                             }
                         )}
