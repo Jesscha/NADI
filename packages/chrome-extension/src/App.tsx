@@ -1,6 +1,4 @@
-import { initializeApp } from "firebase/app";
 import {
-  getFirestore,
   collection,
   addDoc,
   getDoc,
@@ -13,20 +11,8 @@ import {
 } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { Typer } from "./components/Typer";
-
-export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-
-const app = initializeApp(firebaseConfig);
-
-// Initialize Cloud Firestore and get a reference to the service
-const db = getFirestore(app);
+import { db } from "./firebase";
+import useRandomSentence from "./hooks/useRandomSentence";
 
 function uploadSentence(content: string, authorId: string) {
   return addDoc(collection(db, "sentences"), {
@@ -114,9 +100,8 @@ async function getLikedSentencesByUser(userId: string) {
 
 function App() {
   const [authData, setAuthData] = useState<any>(null);
-  const [likes, setLikes] = useState<number | null>(null);
-  const [randomSentence, setRandomSentence] = useState<string | null>(null);
-  const [randomSentenceId, setRandomSentenceId] = useState<string | null>(null);
+  const { refreshRandom, randomSentence } = useRandomSentence();
+
   const [userInput, setUserInput] = useState<string>("");
 
   useEffect(() => {
@@ -163,35 +148,9 @@ function App() {
     }
   };
 
-  const fetchRandomSentence = async () => {
-    const sentences = await getDocs(collection(db, "sentences"));
-    const randomIndex = Math.floor(Math.random() * sentences.docs.length);
-    const randomDoc = sentences.docs[randomIndex];
-    setRandomSentence(randomDoc.data().content);
-    setRandomSentenceId(randomDoc.id);
-  };
-
-  const handleUserInput = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setUserInput(event.target.value);
-  };
-
-  const handleSubmitInput = async () => {
-    if (userInput === randomSentence && randomSentenceId && authData?.user) {
-      const updatedLikes = await getLikes(randomSentenceId);
-      setLikes(updatedLikes);
-      console.log("Correct input! Likes for the sentence:", updatedLikes);
-    } else {
-      console.log("Incorrect input. Try again.");
-    }
-  };
-
-  useEffect(() => {
-    fetchRandomSentence();
-  }, []);
-
   const like = () => {
-    if (randomSentenceId) {
-      likeSentence(randomSentenceId, "1111");
+    if (randomSentence?.id) {
+      likeSentence(randomSentence.id, "1111");
     }
   };
 
@@ -221,8 +180,8 @@ function App() {
       )}
       {likes !== null && <p>Likes: {likes}</p>} */}
       <Typer
-        onNextText={fetchRandomSentence}
-        originalText={randomSentence || ""}
+        onNextText={refreshRandom}
+        originalText={randomSentence?.content || ""}
         like={like}
       />
     </div>

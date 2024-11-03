@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 
 export const Typer = ({
@@ -12,11 +12,15 @@ export const Typer = ({
 }) => {
   const [inputText, setInputText] = useState("");
   const [morph, setMorph] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const originalTextRef = useRef<HTMLSpanElement>(null);
+  const isFetchingRef = useRef(false);
+  const typedTextRef = useRef<HTMLDivElement>(null);
   const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
 
-  const morphTime = 6;
+  const morphTime = 9;
 
   const _originalText = originalText || "     ";
 
@@ -61,11 +65,46 @@ export const Typer = ({
 
   const fraction = morph / morphTime;
 
+  const onNext = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    setInputText("");
+    await triggerDisappear();
+    console.log("onNextText");
+    onNextText();
+    isFetchingRef.current = false;
+  }, [onNextText]);
+
+  const triggerDisappear = useCallback(() => {
+    const originalTextDom = originalTextRef.current;
+    const typedTextDom = typedTextRef.current;
+    if (originalTextDom && typedTextDom) {
+      originalTextDom.style.transition = "opacity 0.6s ease-out";
+      originalTextDom.style.opacity = "0";
+      typedTextDom.style.opacity = "0";
+    }
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        if (originalTextDom && typedTextDom) {
+          originalTextDom.style.transition = "";
+          originalTextDom.style.opacity = "1";
+        }
+        resolve();
+
+        setTimeout(() => {
+          if (typedTextDom) {
+            typedTextDom.style.opacity = "1";
+          }
+        }, 1000);
+      }, 700);
+    });
+  }, [originalTextRef]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Tab") {
         event.preventDefault(); // Prevent default tab behavior
-        onNextText();
+        onNext();
       }
       if (event.key === "Enter" && originalText === inputText) {
         event.preventDefault(); // Prevent default enter behavior
@@ -78,17 +117,39 @@ export const Typer = ({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onNextText, originalText, inputText]);
+  }, [originalText, inputText, like, onNext]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  const calculateFontSize = () => {
+    const baseSize = 64;
+    const lengthAdjustment = originalText.length * 1.5;
+    const widthAdjustment = (viewportWidth / 100) * 0.7; // Adjust the multiplier to control the effect
+    return Math.max(baseSize - lengthAdjustment + widthAdjustment, 1);
+  };
 
   return (
     <div className="text-gray-300 flex flex-col items-center justify-center gap-[48px]">
       <h1
-        className="font-mono text-[64px] animate-ripple h-[30px]"
+        className="font-mono animate-ripple h-[30px]"
         style={{
           filter: `url(#threshold) blur(0px)`,
+          fontSize: `${calculateFontSize()}px`, // Adjust font size based on text length and viewport width
         }}
       >
         <span
+          ref={originalTextRef}
+          // className="transition-all duration-700"
           style={{
             filter: `blur(${Math.min(8 / fraction - 8, 50)}px)`,
             opacity: `${Math.pow(fraction, 0.4) * 100}%`,
@@ -106,12 +167,13 @@ export const Typer = ({
         className="absolute left-[-9999px]"
       />
       <div
-        className="flex gap-[5px] overflow-visible h-[50px] mt-[50px]"
+        className="flex gap-[5px] overflow-visible h-[50px] mt-[50px] transition-all duration-700"
         onClick={() => {
           if (inputRef.current) {
             inputRef.current.focus();
           }
         }}
+        ref={typedTextRef}
       >
         {_originalText.split("").map((char, index) => (
           <div
@@ -130,7 +192,7 @@ export const Typer = ({
         ))}
       </div>
       <div className="flex justify-center items-center gap-[12px]">
-        <button tabIndex={-1} onClick={onNextText}>
+        <button tabIndex={-1} onClick={onNext}>
           Next
         </button>
       </div>
