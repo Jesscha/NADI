@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
+import ResponsiveText from "./common/ResponsiveText";
 
 const LikeColors = [
   "lightyellow", // 매우 부드러운 시작
@@ -155,13 +156,6 @@ export const Typer = ({
     };
   }, []);
 
-  const calculateFontSize = () => {
-    const baseSize = 64;
-    const lengthAdjustment = originalText.length * 1.5;
-    const widthAdjustment = (viewportWidth / 100) * 0.7; // Adjust the multiplier to control the effect
-    return Math.max(baseSize - lengthAdjustment + widthAdjustment, 1);
-  };
-
   const triggerAnimation = () => {
     setAnimateBackground(true);
     setTimeout(() => setAnimateBackground(false), 1000); // Reset after animation duration
@@ -169,33 +163,34 @@ export const Typer = ({
 
   return (
     <div className="flex flex-col items-center justify-center gap-[48px]">
-      <h1
-        className="font-mono animate-ripple h-[30px]"
-        style={{
-          filter: `url(#threshold) blur(0px)`,
-          fontSize: `${calculateFontSize()}px`, // Adjust font size based on text length and viewport width
-          // Ensure the background-clip works correctly
-        }}
-        ref={originalTextRef}
-      >
-        <span
-          className={animateBackground ? "animate-fillBackground" : ""}
+      <ResponsiveText targetLength={originalText.length}>
+        <h1
+          className="font-mono h-[30px]"
           style={{
-            filter: `blur(${Math.min(8 / fraction - 8, 50)}px)`,
-            opacity: `${Math.pow(fraction, 0.4) * 100}%`,
-            color: "transparent", // Make the text color transparent
-            backgroundClip: "text", // Use background-clip to apply background color to text
-            WebkitBackgroundClip: "text", // For Webkit browsers
-            backgroundImage: `linear-gradient(to right,${
-              LikeColors[likeCount % LikeColors.length]
-            } 50%, ${LikeColors[(likeCount + 1) % LikeColors.length]} 50%)`, // Set the gradient for the animation
-            backgroundSize: "200% 100%", // Double the width for animation
-            display: "inline-block",
+            filter: `url(#threshold) blur(0px)`,
+            // Ensure the background-clip works correctly
           }}
+          ref={originalTextRef}
         >
-          {originalText}
-        </span>
-      </h1>
+          <span
+            className={animateBackground ? "animate-fillBackground" : ""}
+            style={{
+              filter: `blur(${Math.min(8 / fraction - 8, 50)}px)`,
+              opacity: `${Math.pow(fraction, 0.4) * 100}%`,
+              color: "transparent", // Make the text color transparent
+              backgroundClip: "text", // Use background-clip to apply background color to text
+              WebkitBackgroundClip: "text", // For Webkit browsers
+              backgroundImage: `linear-gradient(to right,${
+                LikeColors[likeCount % LikeColors.length]
+              } 50%, ${LikeColors[(likeCount + 1) % LikeColors.length]} 50%)`, // Set the gradient for the animation
+              backgroundSize: "200% 100%", // Double the width for animation
+              display: "inline-block",
+            }}
+          >
+            {originalText}
+          </span>
+        </h1>
+      </ResponsiveText>
 
       <input
         ref={inputRef}

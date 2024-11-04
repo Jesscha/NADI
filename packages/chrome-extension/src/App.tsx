@@ -165,7 +165,7 @@ function App() {
         />
       </div>
       <div className="snap-start h-screen bg-gray-900 flex justify-center items-center">
-        <Writer />
+        <Writer authorId={authData?.user?.uid} />
       </div>
     </div>
   );
