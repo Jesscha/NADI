@@ -13,6 +13,7 @@ import React, { useEffect, useState } from "react";
 import { Typer } from "./components/Typer";
 import { db } from "./firebase";
 import useRandomSentence from "./hooks/useRandomSentence";
+import Writer from "./components/Writer";
 
 function uploadSentence(content: string, authorId: string) {
   return addDoc(collection(db, "sentences"), {
@@ -155,35 +156,17 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen w-screen bg-gray-700">
-      {/* {authData?.user ? (
-        <p>User: {authData.user.displayName || "Anonymous"}</p>
-      ) : (
-        <p>No user authenticated.</p>
-      )}
-      <button onClick={handleFirebaseAuth}>Authenticate with Firebase</button>
-      <input
-        type="text"
-        value={userInput}
-        onChange={handleUserInput}
-        placeholder="Write your sentence here"
-      />
-      <button onClick={handleUploadSentence}>Upload Sentence</button>
-      <button onClick={handleGetLikedSentencesByUser}>Get Liked Sentences</button>
-      <button onClick={fetchRandomSentence}>Show Random Sentence</button>
-      {randomSentence && (
-        <div>
-          <p>Type this sentence: {randomSentence}</p>
-          <input type="text" value={userInput} onChange={handleUserInput} />
-          <button onClick={handleSubmitInput}>Submit</button>
-        </div>
-      )}
-      {likes !== null && <p>Likes: {likes}</p>} */}
-      <Typer
-        onNextText={refreshRandom}
-        originalText={randomSentence?.content || ""}
-        like={like}
-      />
+    <div className="h-screen overflow-y-scroll snap-y snap-mandatory scrollbar-hide ">
+      <div className="snap-start h-screen bg-gray-700 flex justify-center items-center">
+        <Typer
+          onNextText={refreshRandom}
+          originalText={randomSentence?.content || ""}
+          like={like}
+        />
+      </div>
+      <div className="snap-start h-screen bg-gray-900 flex justify-center items-center">
+        <Writer />
+      </div>
     </div>
   );
 }

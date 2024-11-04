@@ -1,7 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 
-const LikeColors = ["red", "green", "blue"];
+const LikeColors = [
+  "lightyellow", // 매우 부드러운 시작
+  "khaki", // 약간 더 진한 노란색
+  "gold", // 황금빛
+  "orange", // 눈에 띄는 오렌지
+  "darkorange", // 더 강렬한 오렌지
+  "orangered", // 붉은 오렌지
+  "tomato", // 토마토색
+  "red", // 강렬한 빨간색
+  "firebrick", // 어두운 빨간색
+  "darkred", // 매우 어두운 빨간색
+];
 
 export const Typer = ({
   originalText,
@@ -118,6 +129,7 @@ export const Typer = ({
         event.preventDefault(); // Prevent default enter behavior
         triggerAnimation();
         like();
+        setInputText("");
         setTimeout(() => {
           setLikeCount((prev) => prev + 1);
         }, 1000);
@@ -218,16 +230,8 @@ export const Typer = ({
           </div>
         ))}
       </div>
-      <div className="flex justify-center items-center gap-[12px]">
-        <button tabIndex={-1} onClick={onNext}>
-          Next
-        </button>
-        <button tabIndex={-1} onClick={triggerAnimation}>
-          Play Animation
-        </button>
-      </div>
-      <div>{originalText === inputText && <div>Press Enter to like</div>}</div>
-      <svg id="filters">
+
+      <svg id="filters" className="hidden">
         <defs>
           <filter id="threshold">
             <feColorMatrix
