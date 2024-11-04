@@ -2,30 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
-
-
 .ripple {
-    position: relative;
-    overflow: hidden;
-  }
+  position: relative;
+  overflow: hidden;
+}
 
-  .ripple::after {
-    content: '';
-    display: block;
-    position: absolute;
-    width: 100px;
-    height: 100px;
-    top: 50%;
-    left: 50%;
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    animation: ripple-animation 1s ease-out;
-  }
+.ripple::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  top: 50%;
+  left: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  animation: ripple-animation 1s ease-out;
+}
 
-  @keyframes ripple-animation {
-    to {
-      transform: translate(-50%, -50%) scale(4);
-      opacity: 0;
-    }
+@keyframes ripple-animation {
+  to {
+    transform: translate(-50%, -50%) scale(4);
+    opacity: 0;
   }
+}
+
+.animate-like {
+  animation: colorFill 1s forwards;
+}
+
+@keyframes colorFill {
+  0% {
+    background: linear-gradient(to right, red 0%, transparent 0%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  100% {
+    background: linear-gradient(to right, red 100%, transparent 0%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+.animate-fillBackground {
+  animation: fillBackground 1s cubic-bezier(0.5, 0, 0.75, 1) forwards; /* 초반에 천천히, 후반에 빠르게 */
+}
+
+@keyframes fillBackground {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: 100% 0;
+  }
+}

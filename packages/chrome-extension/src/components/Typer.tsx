@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 
+const LikeColors = ["red", "green", "blue"];
+
 export const Typer = ({
   originalText,
   onNextText,
@@ -13,22 +15,25 @@ export const Typer = ({
   const [inputText, setInputText] = useState("");
   const [morph, setMorph] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
+  const [likeCount, setLikeCount] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const originalTextRef = useRef<HTMLSpanElement>(null);
+  const originalTextRef = useRef<HTMLHeadingElement>(null);
   const isFetchingRef = useRef(false);
   const typedTextRef = useRef<HTMLDivElement>(null);
   const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
 
-  const morphTime = 9;
+  const morphTime = 8;
 
   const _originalText = originalText || "     ";
 
   const [shouldAnimate, setShouldAnimate] = useState(false);
+  const [animateBackground, setAnimateBackground] = useState(false);
 
   useEffect(() => {
     setShouldAnimate(true);
     setMorph(0);
+    setLikeCount(0);
   }, [originalText]);
 
   useEffect(() => {
@@ -65,40 +70,43 @@ export const Typer = ({
 
   const fraction = morph / morphTime;
 
-  const onNext = useCallback(async () => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-    setInputText("");
-    await triggerDisappear();
-    console.log("onNextText");
-    onNextText();
-    isFetchingRef.current = false;
-  }, [onNextText]);
-
   const triggerDisappear = useCallback(() => {
     const originalTextDom = originalTextRef.current;
     const typedTextDom = typedTextRef.current;
+
     if (originalTextDom && typedTextDom) {
-      originalTextDom.style.transition = "opacity 0.6s ease-out";
+      originalTextDom.style.transition = "opacity 0.5s ease-out";
       originalTextDom.style.opacity = "0";
       typedTextDom.style.opacity = "0";
     }
     return new Promise<void>((resolve) => {
       setTimeout(() => {
-        if (originalTextDom && typedTextDom) {
+        const originalTextDom = originalTextRef.current;
+        if (originalTextDom) {
           originalTextDom.style.transition = "";
           originalTextDom.style.opacity = "1";
         }
         resolve();
-
         setTimeout(() => {
+          const typedTextDom = typedTextRef.current;
           if (typedTextDom) {
             typedTextDom.style.opacity = "1";
           }
-        }, 1000);
-      }, 700);
+        }, 2000);
+      }, 800);
     });
-  }, [originalTextRef]);
+  }, []);
+
+  const onNext = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    setInputText("");
+    await triggerDisappear();
+    onNextText();
+    setTimeout(() => {
+      isFetchingRef.current = false;
+    }, 2000);
+  }, [onNextText, triggerDisappear]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -108,7 +116,11 @@ export const Typer = ({
       }
       if (event.key === "Enter" && originalText === inputText) {
         event.preventDefault(); // Prevent default enter behavior
+        triggerAnimation();
         like();
+        setTimeout(() => {
+          setLikeCount((prev) => prev + 1);
+        }, 1000);
       }
     };
 
@@ -138,26 +150,41 @@ export const Typer = ({
     return Math.max(baseSize - lengthAdjustment + widthAdjustment, 1);
   };
 
+  const triggerAnimation = () => {
+    setAnimateBackground(true);
+    setTimeout(() => setAnimateBackground(false), 1000); // Reset after animation duration
+  };
+
   return (
-    <div className="text-gray-300 flex flex-col items-center justify-center gap-[48px]">
+    <div className="flex flex-col items-center justify-center gap-[48px]">
       <h1
         className="font-mono animate-ripple h-[30px]"
         style={{
           filter: `url(#threshold) blur(0px)`,
           fontSize: `${calculateFontSize()}px`, // Adjust font size based on text length and viewport width
+          // Ensure the background-clip works correctly
         }}
+        ref={originalTextRef}
       >
         <span
-          ref={originalTextRef}
-          // className="transition-all duration-700"
+          className={animateBackground ? "animate-fillBackground" : ""}
           style={{
             filter: `blur(${Math.min(8 / fraction - 8, 50)}px)`,
             opacity: `${Math.pow(fraction, 0.4) * 100}%`,
+            color: "transparent", // Make the text color transparent
+            backgroundClip: "text", // Use background-clip to apply background color to text
+            WebkitBackgroundClip: "text", // For Webkit browsers
+            backgroundImage: `linear-gradient(to right,${
+              LikeColors[likeCount % LikeColors.length]
+            } 50%, ${LikeColors[(likeCount + 1) % LikeColors.length]} 50%)`, // Set the gradient for the animation
+            backgroundSize: "200% 100%", // Double the width for animation
+            display: "inline-block",
           }}
         >
           {originalText}
         </span>
       </h1>
+
       <input
         ref={inputRef}
         type="text"
@@ -194,6 +221,9 @@ export const Typer = ({
       <div className="flex justify-center items-center gap-[12px]">
         <button tabIndex={-1} onClick={onNext}>
           Next
+        </button>
+        <button tabIndex={-1} onClick={triggerAnimation}>
+          Play Animation
         </button>
       </div>
       <div>{originalText === inputText && <div>Press Enter to like</div>}</div>
