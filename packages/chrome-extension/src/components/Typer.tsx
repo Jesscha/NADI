@@ -19,10 +19,12 @@ export const Typer = ({
   originalText,
   onNextText,
   like,
+  isVisible,
 }: {
   originalText: string;
   onNextText: () => void;
   like: () => void;
+  isVisible: boolean;
 }) => {
   const [inputText, setInputText] = useState("");
   const [morph, setMorph] = useState(0);
@@ -75,10 +77,10 @@ export const Typer = ({
   };
 
   useEffect(() => {
-    if (inputRef.current) {
+    if (inputRef.current && isVisible) {
       inputRef.current.focus();
     }
-  }, []);
+  }, [isVisible]);
 
   const fraction = morph / morphTime;
 

@@ -9,7 +9,7 @@ import {
   getDocs,
   arrayUnion,
 } from "firebase/firestore";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Typer } from "./components/Typer";
 import { db } from "./firebase";
 import useRandomSentence from "./hooks/useRandomSentence";
@@ -99,11 +99,40 @@ async function getLikedSentencesByUser(userId: string) {
   return sentences;
 }
 
+function useIsVisible(ref: React.RefObject<HTMLElement>) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 1 } // Adjust threshold as needed
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [ref]);
+
+  return isVisible;
+}
+
 function App() {
   const [authData, setAuthData] = useState<any>(null);
   const { refreshRandom, randomSentence } = useRandomSentence();
 
   const [userInput, setUserInput] = useState<string>("");
+
+  const typerRef = useRef<HTMLDivElement>(null);
+  const writerRef = useRef<HTMLDivElement>(null);
+
+  const isTyperVisible = useIsVisible(typerRef);
+  const isWriterVisible = useIsVisible(writerRef);
 
   useEffect(() => {
     // Listen for messages from the background script
@@ -155,17 +184,26 @@ function App() {
     }
   };
 
+  console.log(isTyperVisible, isWriterVisible);
+
   return (
     <div className="h-screen overflow-y-scroll snap-y snap-mandatory scrollbar-hide ">
-      <div className="snap-start h-screen bg-gray-700 flex justify-center items-center">
+      <div
+        ref={typerRef}
+        className="snap-start h-screen bg-gray-700 flex justify-center items-center"
+      >
         <Typer
           onNextText={refreshRandom}
           originalText={randomSentence?.content || ""}
           like={like}
+          isVisible={isTyperVisible}
         />
       </div>
-      <div className="snap-start h-screen bg-gray-900 flex justify-center items-center">
-        <Writer authorId={authData?.user?.uid} />
+      <div
+        ref={writerRef}
+        className="snap-start h-screen bg-gray-900 flex justify-center items-center"
+      >
+        <Writer authorId={authData?.user?.uid} isVisible={isWriterVisible} />
       </div>
     </div>
   );

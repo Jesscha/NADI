@@ -16,7 +16,13 @@ function uploadSentence(content: string, authorId: string) {
   });
 }
 
-function Writer({ authorId }: { authorId: string }) {
+function Writer({
+  authorId,
+  isVisible,
+}: {
+  authorId: string;
+  isVisible: boolean;
+}) {
   const [sentence, setSentence] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
