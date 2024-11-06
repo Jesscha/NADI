@@ -217,7 +217,7 @@ export const Typer = ({
               )}
               style={{
                 width: "1ch", // Set width to match the font size
-                height: "1.3em", // Set height to match the font size
+                height: "1.5em", // Set height to match the font size
               }}
             >
               {inputText[index] || (index === inputText.length ? "|" : "")}

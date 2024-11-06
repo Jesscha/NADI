@@ -60,7 +60,7 @@ function Writer({
       </ResponsiveText> */}
       <ResponsiveText targetLength={sentence.length}>
         <div
-          className="flex flex-row gap-[1px]"
+          className="flex flex-row gap-[1px] flex-wrap"
           onClick={() => {
             inputRef.current?.focus();
           }}
@@ -73,6 +73,9 @@ function Writer({
                   "animate-bounce ripple": sentence[index],
                   "animate-blink": index === sentence.length, // Add blinking cursor at the next position
                 })}
+                style={{
+                  width: "1ch", // Set width to match the font size
+                }}
               >
                 {sentence[index] || (index === sentence.length ? "|" : "")}
               </div>
