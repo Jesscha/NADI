@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 interface ResponsiveTextProps {
   className?: string;
   style?: React.CSSProperties;
-  children: React.ReactNode;
+  children: React.ReactElement<{ fontSize?: number }>;
   targetLength: number;
 }
 
@@ -27,23 +27,25 @@ const ResponsiveText: React.FC<ResponsiveTextProps> = ({
     };
   }, []);
 
-  const calculateFontSize = () => {
+  const fontSize = useMemo(() => {
     const baseSize = 64;
     const lengthAdjustment = targetLength * 1.5;
     const widthAdjustment = (viewportWidth / 100) * 0.7;
-    return Math.max(baseSize - lengthAdjustment + widthAdjustment, 1);
-  };
+    return Math.max(baseSize - lengthAdjustment + widthAdjustment, 20);
+  }, [targetLength, viewportWidth]);
 
   return (
-    <h1
+    <div
       className={className}
       style={{
-        fontSize: `${calculateFontSize()}px`,
+        fontSize: `${fontSize}px`,
         ...style,
       }}
     >
-      {children}
-    </h1>
+      {React.isValidElement(children)
+        ? React.cloneElement(children, { fontSize: fontSize })
+        : children}
+    </div>
   );
 };
 

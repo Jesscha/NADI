@@ -28,7 +28,6 @@ export const Typer = ({
 }) => {
   const [inputText, setInputText] = useState("");
   const [morph, setMorph] = useState(0);
-  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const [likeCount, setLikeCount] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -79,6 +78,8 @@ export const Typer = ({
   useEffect(() => {
     if (inputRef.current && isVisible) {
       inputRef.current.focus();
+    } else {
+      inputRef.current?.blur();
     }
   }, [isVisible]);
 
@@ -146,26 +147,17 @@ export const Typer = ({
     };
   }, [originalText, inputText, like, onNext]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setViewportWidth(window.innerWidth);
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
-
   const triggerAnimation = () => {
     setAnimateBackground(true);
     setTimeout(() => setAnimateBackground(false), 1000); // Reset after animation duration
   };
 
   return (
-    <div className="flex flex-col items-center justify-center gap-[48px]">
-      <ResponsiveText targetLength={originalText.length}>
+    <div className="flex flex-col items-center justify-center gap-[48px] w-full">
+      <ResponsiveText
+        className="whitespace-pre-wrap"
+        targetLength={originalText.length}
+      >
         <h1
           className="font-mono h-[30px]"
           style={{
@@ -202,31 +194,37 @@ export const Typer = ({
         tabIndex={-1}
         className="absolute left-[-9999px]"
       />
-      <div
-        className="flex gap-[5px] overflow-visible h-[50px] mt-[50px] transition-all duration-700"
-        onClick={() => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-          }
-        }}
-        ref={typedTextRef}
-      >
-        {_originalText.split("").map((char, index) => (
-          <div
-            key={index}
-            className={classNames(
-              "w-[10px] font-mono h-[30px] border-b-solid border-b-black border-b-[1px] overflow-visible",
-              {
-                "animate-bounce ripple": inputText[index],
-                "text-red-500": inputText[index] && inputText[index] !== char, // Add red color if not matching
-                "animate-blink": index === inputText.length, // Add blinking cursor at the next position
-              }
-            )}
-          >
-            {inputText[index] || (index === inputText.length ? "|" : "")}
-          </div>
-        ))}
-      </div>
+      <ResponsiveText targetLength={originalText.length}>
+        <div
+          className="flex  overflow-visible h-[50px] mt-[50px] transition-all duration-700 w-full flex-wrap"
+          onClick={() => {
+            if (inputRef.current) {
+              inputRef.current.focus();
+            }
+          }}
+          ref={typedTextRef}
+        >
+          {_originalText.split("").map((char, index) => (
+            <div
+              key={index}
+              className={classNames(
+                "font-mono border-b-solid border-b-black border-b-[1px] overflow-visible",
+                {
+                  "animate-bounce ripple": inputText[index],
+                  "text-red-500": inputText[index] && inputText[index] !== char, // Add red color if not matching
+                  "animate-blink": index === inputText.length, // Add blinking cursor at the next position
+                }
+              )}
+              style={{
+                width: "1ch", // Set width to match the font size
+                height: "1.3em", // Set height to match the font size
+              }}
+            >
+              {inputText[index] || (index === inputText.length ? "|" : "")}
+            </div>
+          ))}
+        </div>
+      </ResponsiveText>
 
       <svg id="filters" className="hidden">
         <defs>
