@@ -190,11 +190,13 @@ function App() {
     <div className="h-screen overflow-y-scroll snap-y snap-mandatory scrollbar-hide ">
       <div
         ref={typerRef}
-        className="snap-start h-screen bg-gray-700 flex justify-center items-center"
+        className="snap-start h-screen flex justify-center items-center"
       >
         <Typer
           onNextText={refreshRandom}
-          originalText={randomSentence?.content || ""}
+          originalText={
+            "Success is not the key to happiness. Happiness is the key to success. If you love what you are doing, you will be successful."
+          }
           like={like}
           isVisible={isTyperVisible}
         />

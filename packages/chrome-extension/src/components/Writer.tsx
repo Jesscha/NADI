@@ -60,11 +60,7 @@ function Writer({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center gap-[48px] text-gray-300">
-      <h2>Writer Component</h2>
-      {/* <ResponsiveText targetLength={sentence.length}>
-        <h1 className="font-mono h-[30px]">{sentence}</h1>
-      </ResponsiveText> */}
+    <div className="flex flex-col items-center justify-center gap-[48px] text-gray-300 p-10">
       <ResponsiveText targetLength={sentence.length}>
         <div
           className="flex flex-row gap-[1px] flex-wrap"
@@ -76,7 +72,7 @@ function Writer({
             return (
               <div
                 key={index}
-                className={classNames("font-mono border-b-solid", {
+                className={classNames("font-lora border-b-solid", {
                   "animate-bounce ripple": sentence[index] && !isSubmitted,
                   "animate-blink": index === sentence.length && !isSubmitted,
                   smoky: isSubmitted, // Apply smoky animation when submitted

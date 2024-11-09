@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -9,39 +10,48 @@ import classNames from "classnames";
 import ResponsiveText from "./common/ResponsiveText";
 
 const LikeColors = [
-  "lightyellow", // 매우 부드러운 시작
-  "khaki", // 약간 더 진한 노란색
-  "gold", // 황금빛
-  "orange", // 눈에 띄는 오렌지
+  "black", // 황금빛
   "darkorange", // 더 강렬한 오렌지
   "orangered", // 붉은 오렌지
   "tomato", // 토마토색
+  "crimson", // 진한 빨간색
   "red", // 강렬한 빨간색
   "firebrick", // 어두운 빨간색
   "darkred", // 매우 어두운 빨간색
+  "maroon", // 밤색
+  "saddlebrown", // 짙은 갈색
 ];
 
-const Text = ({ children }: { children: React.ReactNode }) => {
+const Text = ({
+  children,
+  wholeText,
+}: {
+  children: React.ReactNode;
+  wholeText: string;
+}) => {
   const [isAnimation, setIsAnimation] = useState(true);
 
   const randomDelay = useMemo(() => {
     return Math.random() * 0.5;
   }, []);
 
-  useEffect(() => {
-    setTimeout(() => {
+  useLayoutEffect(() => {
+    setIsAnimation(true); // Reset animation state on children change
+    const timer = setTimeout(() => {
       setIsAnimation(false);
     }, 2300 + Math.floor(randomDelay / 1000));
-  }, [randomDelay]);
+
+    return () => clearTimeout(timer); // Cleanup timeout on unmount or re-render
+  }, [randomDelay, wholeText]); // Add
 
   return (
     <span
       className={classNames({
         "smoky-appear": isAnimation,
-        "smoky-mirror-appear": Math.random() > 0.5 && isAnimation,
       })}
       style={{
         animationDelay: `${randomDelay}s`,
+        display: "inline-block",
       }}
     >
       {children}
@@ -69,8 +79,9 @@ export const Typer = ({
   const isFetchingRef = useRef(false);
   const typedTextRef = useRef<HTMLDivElement>(null);
   const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
+  const completeSound = new Audio("/activation-sound.mp3");
 
-  const _originalText = originalText || "     ";
+  const _originalText = originalText || "";
 
   const [animateBackground, setAnimateBackground] = useState(false);
 
@@ -92,14 +103,14 @@ export const Typer = ({
     } else {
       inputRef.current?.blur();
     }
-  }, [isVisible]);
+  }, [isVisible, originalText]);
 
   const triggerDisappear = useCallback(() => {
     const originalTextDom = originalTextRef.current;
     const typedTextDom = typedTextRef.current;
 
     if (originalTextDom && typedTextDom) {
-      // originalTextDom.style.transition = "opacity 0.5s ease-out";
+      originalTextDom.style.transition = "opacity 0.5s ease-out";
       // originalTextDom.style.opacity = "0";
       // typedTextDom.style.opacity = "0";
     }
@@ -140,6 +151,7 @@ export const Typer = ({
       }
       if (event.key === "Enter" && originalText === inputText) {
         event.preventDefault(); // Prevent default enter behavior
+        completeSound.play();
         triggerAnimation();
         like();
         setInputText("");
@@ -162,13 +174,13 @@ export const Typer = ({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center gap-[48px] w-full">
+    <div className="flex flex-col items-start justify-center gap-[48px] w-fit p-10">
       <ResponsiveText
         className="whitespace-pre-wrap"
         targetLength={originalText.length}
       >
         <h1
-          className={classNames("font-mono ", {
+          className={classNames("font-lora", {
             "animate-fillBackground": animateBackground,
           })}
           style={{
@@ -181,9 +193,13 @@ export const Typer = ({
             backgroundSize: "200% 100%", // Double the width for animation
             display: "inline-block",
           }}
+          ref={originalTextRef}
         >
           {_originalText.split("").map((char, index) => (
-            <Text key={index}>{char}</Text>
+            <Text key={index} wholeText={_originalText}>
+              {char === " " && <div className="w-[0.5ch]"></div>}
+              {char}
+            </Text>
           ))}
         </h1>
       </ResponsiveText>
@@ -198,7 +214,7 @@ export const Typer = ({
       />
       <ResponsiveText targetLength={originalText.length}>
         <div
-          className="flex  overflow-visible h-[50px] mt-[50px] transition-all duration-700 w-full flex-wrap"
+          className="flex text-gray-600  overflow-visible h-[50px] mt-[50px] transition-opacity duration-700 w-full flex-wrap"
           onClick={() => {
             if (inputRef.current) {
               inputRef.current.focus();
@@ -209,20 +225,19 @@ export const Typer = ({
           {_originalText.split("").map((char, index) => (
             <div
               key={index}
-              className={classNames(
-                "font-mono border-b-solid border-b-black border-b-[1px] overflow-visible",
-                {
-                  "animate-bounce ripple": inputText[index],
-                  "text-red-500": inputText[index] && inputText[index] !== char, // Add red color if not matching
-                  "animate-blink": index === inputText.length, // Add blinking cursor at the next position
-                }
-              )}
+              className={classNames("font-lora  overflow-visible", {
+                "animate-bounce ripple": inputText[index],
+                "text-red-500": inputText[index] && inputText[index] !== char, // Add red color if not matching
+                "animate-blink": index === inputText.length, // Add blinking cursor at the next position
+              })}
               style={{
-                width: "1ch", // Set width to match the font size
+                // width: "1ch", // Set width to match the font size
                 height: "1.5em", // Set height to match the font size
+                display: "inline-block",
               }}
             >
-              {inputText[index] || (index === inputText.length ? "|" : "")}
+              {char === " " && <div className="w-[0.5ch]"></div>}
+              {inputText[index] || (index === inputText.length ? "|" : " ")}
             </div>
           ))}
         </div>
