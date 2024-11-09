@@ -60,7 +60,10 @@ function Writer({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center gap-[48px] text-gray-300 p-10">
+    <div className="flex flex-col items-start justify-start gap-[48px] text-black p-10 h-full w-full ">
+      <div className="text-2xl font-lora">
+        Drop you thought here ({sentence.length}/200)
+      </div>
       <ResponsiveText targetLength={sentence.length}>
         <div
           className="flex flex-row gap-[1px] flex-wrap"
@@ -73,14 +76,11 @@ function Writer({
               <div
                 key={index}
                 className={classNames("font-lora border-b-solid", {
-                  "animate-bounce ripple": sentence[index] && !isSubmitted,
+                  ripple: sentence[index] && !isSubmitted,
                   "animate-blink": index === sentence.length && !isSubmitted,
                   smoky: isSubmitted, // Apply smoky animation when submitted
                   "smoky-mirror": isSubmitted && index % 2 === 0, // Apply smoky-mirror animation to even indices
                 })}
-                style={{
-                  width: "1ch", // Set width to match the font size
-                }}
               >
                 {sentence[index] || (index === sentence.length ? "|" : "")}
               </div>

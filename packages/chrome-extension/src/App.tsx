@@ -203,7 +203,7 @@ function App() {
       </div>
       <div
         ref={writerRef}
-        className="snap-start h-screen bg-gray-900 flex justify-center items-center"
+        className="snap-start h-screen flex justify-center items-center"
       >
         <Writer authorId={authData?.user?.uid} isVisible={isWriterVisible} />
       </div>
