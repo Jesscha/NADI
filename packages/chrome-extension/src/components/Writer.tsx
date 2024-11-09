@@ -27,6 +27,8 @@ function Writer({
   const [sentence, setSentence] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
   useEffect(() => {
     if (inputRef.current && isVisible) {
       inputRef.current.focus();
@@ -38,13 +40,18 @@ function Writer({
   if (!authorId && !isDev) return <>please login</>;
 
   const handleSubmit = async (event: React.FormEvent) => {
-    const _authId = authorId || "dev";
+    // const _authId = authorId || "dev";
     event.preventDefault();
     setIsLoading(true);
     try {
-      const docId = await uploadSentence(sentence, _authId);
-      console.log("Uploaded sentence with ID:", docId);
-      setSentence(""); // Clear the input field after successful upload
+      // const docId = await uploadSentence(sentence, _authId);
+      // console.log("Uploaded sentence with ID:", docId);
+      // setSentence(""); // Clear the input field after successful upload
+      setIsSubmitted(true); // Set the submitted state to true
+      setTimeout(() => {
+        setIsSubmitted(false);
+        setSentence("");
+      }, 3000);
     } catch (error) {
       console.error("Error uploading sentence:", error);
     } finally {
@@ -69,9 +76,11 @@ function Writer({
             return (
               <div
                 key={index}
-                className={classNames("font-mono border-b-solid ", {
-                  "animate-bounce ripple": sentence[index],
-                  "animate-blink": index === sentence.length, // Add blinking cursor at the next position
+                className={classNames("font-mono border-b-solid", {
+                  "animate-bounce ripple": sentence[index] && !isSubmitted,
+                  "animate-blink": index === sentence.length && !isSubmitted,
+                  smoky: isSubmitted, // Apply smoky animation when submitted
+                  "smoky-mirror": isSubmitted && index % 2 === 0, // Apply smoky-mirror animation to even indices
                 })}
                 style={{
                   width: "1ch", // Set width to match the font size

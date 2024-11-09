@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import classNames from "classnames";
 import ResponsiveText from "./common/ResponsiveText";
 
@@ -15,6 +21,34 @@ const LikeColors = [
   "darkred", // 매우 어두운 빨간색
 ];
 
+const Text = ({ children }: { children: React.ReactNode }) => {
+  const [isAnimation, setIsAnimation] = useState(true);
+
+  const randomDelay = useMemo(() => {
+    return Math.random() * 0.5;
+  }, []);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setIsAnimation(false);
+    }, 2300 + Math.floor(randomDelay / 1000));
+  }, [randomDelay]);
+
+  return (
+    <span
+      className={classNames({
+        "smoky-appear": isAnimation,
+        "smoky-mirror-appear": Math.random() > 0.5 && isAnimation,
+      })}
+      style={{
+        animationDelay: `${randomDelay}s`,
+      }}
+    >
+      {children}
+    </span>
+  );
+};
+
 export const Typer = ({
   originalText,
   onNextText,
@@ -27,7 +61,7 @@ export const Typer = ({
   isVisible: boolean;
 }) => {
   const [inputText, setInputText] = useState("");
-  const [morph, setMorph] = useState(0);
+
   const [likeCount, setLikeCount] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,36 +70,13 @@ export const Typer = ({
   const typedTextRef = useRef<HTMLDivElement>(null);
   const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
 
-  const morphTime = 8;
-
   const _originalText = originalText || "     ";
 
-  const [shouldAnimate, setShouldAnimate] = useState(false);
   const [animateBackground, setAnimateBackground] = useState(false);
 
   useEffect(() => {
-    setShouldAnimate(true);
-    setMorph(0);
     setLikeCount(0);
   }, [originalText]);
-
-  useEffect(() => {
-    if (!shouldAnimate) return;
-    let animationFrameId: number;
-    const update = () => {
-      setMorph((prevMorph) => prevMorph + 0.1);
-      if (morph >= morphTime) {
-        setShouldAnimate(false);
-        setMorph(morphTime);
-      }
-
-      animationFrameId = requestAnimationFrame(update);
-    };
-
-    animationFrameId = requestAnimationFrame(update);
-
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [morph, shouldAnimate]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.value.length > originalText.length) {
@@ -83,29 +94,27 @@ export const Typer = ({
     }
   }, [isVisible]);
 
-  const fraction = morph / morphTime;
-
   const triggerDisappear = useCallback(() => {
     const originalTextDom = originalTextRef.current;
     const typedTextDom = typedTextRef.current;
 
     if (originalTextDom && typedTextDom) {
-      originalTextDom.style.transition = "opacity 0.5s ease-out";
-      originalTextDom.style.opacity = "0";
-      typedTextDom.style.opacity = "0";
+      // originalTextDom.style.transition = "opacity 0.5s ease-out";
+      // originalTextDom.style.opacity = "0";
+      // typedTextDom.style.opacity = "0";
     }
     return new Promise<void>((resolve) => {
       setTimeout(() => {
         const originalTextDom = originalTextRef.current;
         if (originalTextDom) {
-          originalTextDom.style.transition = "";
-          originalTextDom.style.opacity = "1";
+          // originalTextDom.style.transition = "";
+          // originalTextDom.style.opacity = "1";
         }
         resolve();
         setTimeout(() => {
           const typedTextDom = typedTextRef.current;
           if (typedTextDom) {
-            typedTextDom.style.opacity = "1";
+            // typedTextDom.style.opacity = "1";
           }
         }, 2000);
       }, 800);
@@ -159,30 +168,23 @@ export const Typer = ({
         targetLength={originalText.length}
       >
         <h1
-          className="font-mono h-[30px]"
+          className={classNames("font-mono ", {
+            "animate-fillBackground": animateBackground,
+          })}
           style={{
-            filter: `url(#threshold) blur(0px)`,
-            // Ensure the background-clip works correctly
+            color: "transparent", // Make the text color transparent
+            backgroundClip: "text", // Use background-clip to apply background color to text
+            WebkitBackgroundClip: "text", // For Webkit browsers
+            backgroundImage: `linear-gradient(to right,${
+              LikeColors[likeCount % LikeColors.length]
+            } 50%, ${LikeColors[(likeCount + 1) % LikeColors.length]} 50%)`, // Set the gradient for the animation
+            backgroundSize: "200% 100%", // Double the width for animation
+            display: "inline-block",
           }}
-          ref={originalTextRef}
         >
-          <span
-            className={animateBackground ? "animate-fillBackground" : ""}
-            style={{
-              filter: `blur(${Math.min(8 / fraction - 8, 50)}px)`,
-              opacity: `${Math.pow(fraction, 0.4) * 100}%`,
-              color: "transparent", // Make the text color transparent
-              backgroundClip: "text", // Use background-clip to apply background color to text
-              WebkitBackgroundClip: "text", // For Webkit browsers
-              backgroundImage: `linear-gradient(to right,${
-                LikeColors[likeCount % LikeColors.length]
-              } 50%, ${LikeColors[(likeCount + 1) % LikeColors.length]} 50%)`, // Set the gradient for the animation
-              backgroundSize: "200% 100%", // Double the width for animation
-              display: "inline-block",
-            }}
-          >
-            {originalText}
-          </span>
+          {_originalText.split("").map((char, index) => (
+            <Text key={index}>{char}</Text>
+          ))}
         </h1>
       </ResponsiveText>
 
@@ -225,21 +227,6 @@ export const Typer = ({
           ))}
         </div>
       </ResponsiveText>
-
-      <svg id="filters" className="hidden">
-        <defs>
-          <filter id="threshold">
-            <feColorMatrix
-              in="SourceGraphic"
-              type="matrix"
-              values="1 0 0 0 0
-                        0 1 0 0 0
-                        0 0 1 0 0
-                        0 0 0 255 -140"
-            />
-          </filter>
-        </defs>
-      </svg>
     </div>
   );
 };

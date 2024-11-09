@@ -66,3 +66,81 @@
   -ms-overflow-style: none; /* Hide scrollbar for Internet Explorer and Edge */
   scrollbar-width: none; /* Hide scrollbar for Firefox */
 }
+
+.smoky {
+  display: inline-block;
+  text-shadow: 0 0 0 whitesmoke;
+  animation: smoky 3s both;
+  color: transparent;
+}
+
+.smoky-appear {
+  display: inline-block;
+  text-shadow: 0 0 0 whitesmoke;
+  animation: smoky-appear 2s both;
+  color: transparent;
+}
+
+.smoky-mirror-appear {
+  animation-name: smoky-mirror-appear;
+}
+
+.smoky-mirror {
+  animation-name: smoky-mirror;
+}
+
+@keyframes smoky {
+  60% {
+    text-shadow: 0 0 40px whitesmoke;
+  }
+  to {
+    transform: translate3d(0, -15rem, 0) rotate(-40deg) skewX(70deg) scale(1.5);
+    text-shadow: 0 0 20px whitesmoke;
+    opacity: 0;
+  }
+}
+
+@keyframes smoky-mirror {
+  60% {
+    text-shadow: 0 0 40px whitesmoke;
+  }
+  to {
+    transform: translate3d(0, -18rem, 0) rotate(-40deg) skewX(-70deg) scale(2);
+    text-shadow: 0 0 20px whitesmoke;
+    opacity: 0;
+  }
+}
+
+@keyframes smoky-appear {
+  from {
+    transform: translate3d(0, -15rem, 0) rotate(-40deg) skewX(70deg) scale(1.5);
+    text-shadow: 0 0 20px whitesmoke;
+    opacity: 0;
+  }
+  40% {
+    text-shadow: 0 0 40px whitesmoke;
+  }
+  to {
+    transform: translate3d(0, 0, 0) rotate(0deg) skewX(0deg) scale(1);
+    /* text-shadow: 0 0 20px whitesmoke; */
+    opacity: 1;
+    color: transparent;
+  }
+}
+
+@keyframes smoky-mirror-appear {
+  from {
+    transform: translate3d(0, -30rem, 0) rotate(-40deg) skewX(-70deg) scale(2);
+    text-shadow: 0 0 20px whitesmoke;
+    opacity: 0;
+  }
+  40% {
+    text-shadow: 0 0 40px whitesmoke;
+  }
+  to {
+    transform: translate3d(0, 0, 0) rotate(0deg) skewX(0deg) scale(1);
+    /* text-shadow: 0 0 20px whitesmoke; */
+    opacity: 1;
+    color: transparent;
+  }
+}
