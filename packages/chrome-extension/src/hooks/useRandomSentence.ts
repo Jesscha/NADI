@@ -27,7 +27,6 @@ function useRandomSentence() {
           randomIndex = Math.floor(Math.random() * sentences.length);
           randomDoc = sentences[randomIndex];
         } while (randomDoc.id === randomSentence?.id);
-        console.log("randomDoc", randomDoc);
         setRandomSentence(randomDoc);
       }
     };

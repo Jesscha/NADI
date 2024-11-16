@@ -9,6 +9,7 @@ module.exports = {
         waterDrop: "waterDrop 0.5s ease-out",
         ripple: "ripple 1s ease-in-out",
         wave: "wave 5s infinite linear",
+        twinkle: "twinkle 2s ease-in-out 1",
       },
       keyframes: {
         bounce: {
@@ -33,6 +34,11 @@ module.exports = {
         wave: {
           "0%": { backgroundPosition: "0% 50%" },
           "100%": { backgroundPosition: "100% 50%" },
+        },
+        twinkle: {
+          "0%": { opacity: "0.2" },
+          "50%": { opacity: "1" },
+          "100%": { opacity: "0.2" },
         },
       },
     },

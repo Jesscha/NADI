@@ -8,6 +8,38 @@ import React, {
 } from "react";
 import classNames from "classnames";
 import ResponsiveText from "./common/ResponsiveText";
+import { useAtomValue } from "jotai";
+import { userIdAtom } from "../atoms";
+import { DEV_USER_ID } from "../constants";
+import { arrayUnion, doc, runTransaction } from "firebase/firestore";
+import { db } from "../firebase";
+import useRandomSentence from "../hooks/useRandomSentence";
+
+const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
+const completeSound = new Audio("/activation-sound.mp3");
+async function likeSentence(sentenceId: string, userId: string) {
+  const sentenceRef = doc(db, "sentences", sentenceId);
+
+  await runTransaction(db, async (transaction) => {
+    const docSnapshot = await transaction.get(sentenceRef);
+    if (!docSnapshot.exists()) {
+      throw "Document does not exist!";
+    }
+    const data = docSnapshot.data();
+    const newLikes = (data?.likes || 0) + 1;
+    const userLikes = (data?.likesByUser?.[userId] || 0) + 1;
+
+    transaction.update(sentenceRef, {
+      likes: newLikes,
+      likedBy: arrayUnion(userId),
+      likesByUser: {
+        ...data?.likesByUser,
+        [userId]: userLikes,
+      },
+    });
+  });
+  console.log("Like added!");
+}
 
 const LikeColors = [
   "black", // 황금빛
@@ -59,18 +91,9 @@ const Text = ({
   );
 };
 
-export const Typer = ({
-  originalText,
-  onNextText,
-  like,
-  isVisible,
-}: {
-  originalText: string;
-  onNextText: () => void;
-  like: () => void;
-  isVisible: boolean;
-}) => {
+export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [inputText, setInputText] = useState("");
+  const { refreshRandom, randomSentence } = useRandomSentence();
 
   const [likeCount, setLikeCount] = useState(0);
 
@@ -78,19 +101,19 @@ export const Typer = ({
   const originalTextRef = useRef<HTMLHeadingElement>(null);
   const isFetchingRef = useRef(false);
   const typedTextRef = useRef<HTMLDivElement>(null);
-  const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
-  const completeSound = new Audio("/activation-sound.mp3");
 
-  const _originalText = originalText || "";
+  const userId = useAtomValue(userIdAtom);
+
+  const _originalText = randomSentence?.content || "";
 
   const [animateBackground, setAnimateBackground] = useState(false);
 
   useEffect(() => {
     setLikeCount(0);
-  }, [originalText]);
+  }, [randomSentence]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.value.length > originalText.length) {
+    if (event.target.value.length > randomSentence?.content.length) {
       return;
     }
     setInputText(event.target.value);
@@ -103,7 +126,7 @@ export const Typer = ({
     } else {
       inputRef.current?.blur();
     }
-  }, [isVisible, originalText]);
+  }, [isVisible]);
 
   const triggerDisappear = useCallback(() => {
     const originalTextDom = originalTextRef.current;
@@ -111,16 +134,9 @@ export const Typer = ({
 
     if (originalTextDom && typedTextDom) {
       originalTextDom.style.transition = "opacity 0.5s ease-out";
-      // originalTextDom.style.opacity = "0";
-      // typedTextDom.style.opacity = "0";
     }
     return new Promise<void>((resolve) => {
       setTimeout(() => {
-        const originalTextDom = originalTextRef.current;
-        if (originalTextDom) {
-          // originalTextDom.style.transition = "";
-          // originalTextDom.style.opacity = "1";
-        }
         resolve();
         setTimeout(() => {
           const typedTextDom = typedTextRef.current;
@@ -137,11 +153,11 @@ export const Typer = ({
     isFetchingRef.current = true;
     setInputText("");
     await triggerDisappear();
-    onNextText();
+    refreshRandom();
     setTimeout(() => {
       isFetchingRef.current = false;
     }, 2000);
-  }, [onNextText, triggerDisappear]);
+  }, [triggerDisappear, refreshRandom]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -149,11 +165,11 @@ export const Typer = ({
         event.preventDefault(); // Prevent default tab behavior
         onNext();
       }
-      if (event.key === "Enter" && originalText === inputText) {
+      if (event.key === "Enter" && randomSentence?.content === inputText) {
         event.preventDefault(); // Prevent default enter behavior
         completeSound.play();
         triggerAnimation();
-        like();
+        likeSentence(randomSentence?.id || "", userId || DEV_USER_ID);
         setInputText("");
         setTimeout(() => {
           setLikeCount((prev) => prev + 1);
@@ -166,7 +182,7 @@ export const Typer = ({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [originalText, inputText, like, onNext]);
+  }, [inputText, userId, randomSentence, onNext]);
 
   const triggerAnimation = () => {
     setAnimateBackground(true);
@@ -177,7 +193,7 @@ export const Typer = ({
     <div className="flex flex-col items-start justify-center gap-[48px] w-fit p-10">
       <ResponsiveText
         className="whitespace-pre-wrap"
-        targetLength={originalText.length}
+        targetLength={randomSentence?.content.length || 0}
       >
         <h1
           className={classNames("font-lora", {
@@ -195,7 +211,7 @@ export const Typer = ({
           }}
           ref={originalTextRef}
         >
-          {_originalText.split("").map((char, index) => (
+          {_originalText.split("").map((char: string, index: number) => (
             <Text key={index} wholeText={_originalText}>
               {char === " " && <div className="w-[0.5ch]"></div>}
               {char}
@@ -212,7 +228,7 @@ export const Typer = ({
         tabIndex={-1}
         className="absolute left-[-9999px]"
       />
-      <ResponsiveText targetLength={originalText.length}>
+      <ResponsiveText targetLength={_originalText.length || 0}>
         <div
           className="flex text-gray-600  overflow-visible h-[50px] mt-[50px] transition-opacity duration-700 w-full flex-wrap"
           onClick={() => {
@@ -222,7 +238,7 @@ export const Typer = ({
           }}
           ref={typedTextRef}
         >
-          {_originalText.split("").map((char, index) => (
+          {_originalText.split("").map((char: string, index: number) => (
             <div
               key={index}
               className={classNames("font-lora  overflow-visible", {
