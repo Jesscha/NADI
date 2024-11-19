@@ -21,7 +21,7 @@ export const useFirebaseAuth = () => {
         }
       }
     });
-  }, []);
+  }, [setUserId]);
 
   const triggerAuth = () => {
     chrome.runtime.sendMessage(

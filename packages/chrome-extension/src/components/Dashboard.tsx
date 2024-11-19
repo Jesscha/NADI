@@ -22,7 +22,6 @@ async function getLikedSentencesByUser(userId: string) {
     id: doc.id,
     ...doc.data(),
   }));
-  console.log("Sentences liked by user:", sentences);
   return sentences;
 }
 
@@ -33,7 +32,6 @@ async function getMySentencesByUser(userId: string) {
     id: doc.id,
     ...doc.data(),
   }));
-  console.log("Sentences written by user:", sentences);
   return sentences;
 }
 
@@ -49,7 +47,6 @@ export const DashboardModalButton = () => {
         setLikedSentences(sentences);
       });
       getMySentencesByUser(userId || DEV_USER_ID).then((sentences) => {
-        console.log("My sentences:", sentences);
         setMySentences(sentences);
       });
     }
@@ -58,15 +55,23 @@ export const DashboardModalButton = () => {
   return (
     <div>
       <button
-        className="font-mono p-[8px] text-gray-500 text-xl cursor-pointer rotate-90"
+        className="font-mono p-[8px] text-gray-500 text-xl cursor-pointer rotate-90 focus:outline-none"
         onClick={() => setIsOpen(true)}
       >
         M
       </button>
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>
-        <div className="w-full h-full bg-gray-100 p-6">
-          <h2 className="text-2xl font-bold mb-4">Liked Sentences</h2>
+        <div className="w-full h-full bg-gray-100 p-6 relative">
+          <button
+            className="text-gray-500 absolute top-[16px] right-[16px] text-[12px]"
+            onClick={() => setIsOpen(false)}
+          >
+            Close(ESC)
+          </button>
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold mb-4">Liked Sentences</h2>
+          </div>
           <div className="mb-8">
             {likedSentences.length > 0 ? (
               likedSentences.map((sentence) => (

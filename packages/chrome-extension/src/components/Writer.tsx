@@ -4,19 +4,17 @@ import { addDoc, collection } from "firebase/firestore";
 
 import classNames from "classnames";
 import Modal from "./common/Modal";
-import { DEV_USER_ID } from "../constants";
+import { DEV_USER_ID, isDev } from "../constants";
 import { useAtomValue } from "jotai";
 import { userIdAtom } from "../atoms";
-
-const isDev = true;
 
 function uploadSentence(content: string, authorId: string) {
   return addDoc(collection(db, "sentences"), {
     content: content,
     authorId: authorId,
-    likes: 0, // 좋아요 수
-    likedBy: [], // 좋아요 한 사람들
-    likesByUser: {}, // 좋아요 한 사람들의 좋아요 수
+    likes: 0,
+    likedBy: [],
+    likesByUser: {},
   }).then((docRef) => {
     console.log("Document written with ID: ", docRef.id);
     return docRef.id; // 새 문장 ID 반환
@@ -46,8 +44,7 @@ function Writer({ isVisible }: { isVisible: boolean }) {
     event.preventDefault();
     setIsLoading(true);
     try {
-      const docId = await uploadSentence(sentence, _authId);
-      console.log("Uploaded sentence with ID:", docId);
+      await uploadSentence(sentence, _authId);
       setSentence(""); // Clear the input field after successful upload
       setIsSubmitted(true); // Set the submitted state to true
       setTimeout(() => {

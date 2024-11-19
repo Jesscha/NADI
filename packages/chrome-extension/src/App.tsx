@@ -4,6 +4,9 @@ import { Typer } from "./components/Typer";
 import Writer from "./components/Writer";
 import { Instruction } from "./components/Instruction";
 import { DashboardModalButton } from "./components/Dashboard";
+import { useFirebaseAuth } from "./hooks/useFirebaseAuth";
+import Modal from "./components/common/Modal";
+import { isDev } from "./constants";
 
 function useIsVisible(ref: React.RefObject<HTMLElement>) {
   const [isVisible, setIsVisible] = useState(false);
@@ -35,7 +38,10 @@ function App() {
   const isTyperVisible = useIsVisible(typerRef);
   const isWriterVisible = useIsVisible(writerRef);
 
-  // const { triggerAuth } = useFirebaseAuth();
+  const { triggerAuth, userId } = useFirebaseAuth();
+  useEffect(() => {
+    // triggerAuth();
+  }, [triggerAuth]);
 
   return (
     <>
@@ -59,6 +65,13 @@ function App() {
           <Writer isVisible={isWriterVisible} />
         </div>
       </div>
+      <Modal isOpen={!userId && !isDev} onClose={() => {}}>
+        <div>
+          <h1>Welcome to the Typewriter</h1>
+          <p>Please sign in to continue.</p>
+          <button onClick={() => triggerAuth()}>Sign in</button>
+        </div>
+      </Modal>
     </>
   );
 }
