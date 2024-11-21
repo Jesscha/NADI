@@ -14,9 +14,11 @@ import { DEV_USER_ID } from "../constants";
 import { arrayUnion, doc, runTransaction } from "firebase/firestore";
 import { db } from "../firebase";
 import useRandomSentence from "../hooks/useRandomSentence";
+import { isElementNotCovered } from "../utils";
 
 const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
 const completeSound = new Audio("/activation-sound.mp3");
+
 async function likeSentence(sentenceId: string, userId: string) {
   const sentenceRef = doc(db, "sentences", sentenceId);
 
@@ -121,7 +123,12 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   };
 
   useEffect(() => {
-    if (inputRef.current && isVisible) {
+    if (
+      inputRef.current &&
+      isVisible &&
+      isElementNotCovered(originalTextRef.current)
+    ) {
+      console.log("focusing", isElementNotCovered(originalTextRef.current));
       inputRef.current.focus();
     } else {
       inputRef.current?.blur();
