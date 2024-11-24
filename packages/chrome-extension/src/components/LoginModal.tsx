@@ -80,11 +80,17 @@ export const LoginModal = () => {
           <span className="w-[240px] p-3 absolute left-0 top-1/2 border-2 border-transparent transform  -translate-y-1/2 text-gray-200 pointer-events-none">
             {getPlaceholderText()}
           </span>
-          {(inputValue === "CONNECT" || inputValue === "TRY OUT") && (
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+          {
+            <span
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 transition-opacity duration-300"
+              style={{
+                opacity:
+                  inputValue === "CONNECT" || inputValue === "TRY OUT" ? 1 : 0,
+              }}
+            >
               Press Enter
             </span>
-          )}
+          }
         </div>
       </div>
     </Modal>

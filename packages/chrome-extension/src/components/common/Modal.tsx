@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 import ReactDOM from "react-dom";
 
 // ... existing code ...
@@ -10,6 +10,17 @@ interface ModalProps {
 }
 
 const Modal = ({ isOpen, onClose, children }: ModalProps) => {
+  const [isVisible, setIsVisible] = useState(isOpen);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+    } else {
+      const timer = setTimeout(() => setIsVisible(false), 500); // Match the CSS transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -26,10 +37,14 @@ const Modal = ({ isOpen, onClose, children }: ModalProps) => {
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isVisible) return null;
 
   return ReactDOM.createPortal(
-    <div className="font-lora w-screen h-screen bg-black/50 fixed top-0 left-0 flex items-center justify-center z-50">
+    <div
+      className={`font-lora w-screen h-screen bg-black/50 fixed top-0 left-0 flex items-center justify-center z-50 transition-opacity duration-500 ${
+        isOpen ? "opacity-100" : "opacity-0"
+      }`}
+    >
       {children}
     </div>,
     document.getElementById("modal-root") as HTMLElement // Type assertion for TypeScript
