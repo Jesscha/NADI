@@ -4,7 +4,7 @@ import { Typer } from "./components/Typer";
 import Writer from "./components/Writer";
 import { Instruction } from "./components/Instruction";
 import { DashboardModalButton } from "./components/Dashboard";
-import { useAuth } from "./hooks/useAuth";
+
 import { LoginModal } from "./components/LoginModal";
 
 function useIsVisible(ref: React.RefObject<HTMLElement>) {
@@ -38,11 +38,6 @@ function App() {
 
   const isTyperVisible = useIsVisible(typerRef);
   const isWriterVisible = useIsVisible(writerRef);
-
-  const { triggerGoogleAuth: triggerAuth } = useAuth();
-  useEffect(() => {
-    // triggerAuth();
-  }, [triggerAuth]);
 
   return (
     <>

@@ -1,13 +1,5 @@
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
-import ResponsiveText from "./common/ResponsiveText";
 import { useAtomValue } from "jotai";
 import { userIdAtom } from "../atoms";
 import { DEV_USER_ID } from "../constants";
@@ -44,7 +36,7 @@ async function likeSentence(sentenceId: string, userId: string) {
 }
 
 const LikeColors = [
-  "black", // 황금빛
+  "gray", // 황금빛
   "darkorange", // 더 강렬한 오렌지
   "orangered", // 붉은 오렌지
   "tomato", // 토마토색
@@ -56,50 +48,15 @@ const LikeColors = [
   "saddlebrown", // 짙은 갈색
 ];
 
-const Text = ({
-  children,
-  wholeText,
-}: {
-  children: React.ReactNode;
-  wholeText: string;
-}) => {
-  const [isAnimation, setIsAnimation] = useState(true);
-
-  const randomDelay = useMemo(() => {
-    return Math.random() * 0.5;
-  }, []);
-
-  useLayoutEffect(() => {
-    setIsAnimation(true); // Reset animation state on children change
-    const timer = setTimeout(() => {
-      setIsAnimation(false);
-    }, 2300 + Math.floor(randomDelay / 1000));
-
-    return () => clearTimeout(timer); // Cleanup timeout on unmount or re-render
-  }, [randomDelay, wholeText]); // Add
-
-  return (
-    <span
-      className={classNames({
-        "smoky-appear": isAnimation,
-      })}
-      style={{
-        animationDelay: `${randomDelay}s`,
-        display: "inline-block",
-      }}
-    >
-      {children}
-    </span>
-  );
-};
-
 export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [inputText, setInputText] = useState("");
+  const [isFadingOut, setIsFadingOut] = useState(false);
+  const [isFadingIn, setIsFadingIn] = useState(false);
   const { refreshRandom, randomSentence } = useRandomSentence();
 
   const [likeCount, setLikeCount] = useState(0);
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const originalTextRef = useRef<HTMLHeadingElement>(null);
   const isFetchingRef = useRef(false);
   const typedTextRef = useRef<HTMLDivElement>(null);
@@ -109,16 +66,23 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const _originalText = randomSentence?.content || "";
 
   const [animateBackground, setAnimateBackground] = useState(false);
+  const [shake, setShake] = useState(false);
 
   useEffect(() => {
     setLikeCount(0);
   }, [randomSentence]);
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.value.length > randomSentence?.content.length) {
-      return;
+  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = event.target.value;
+    if (
+      newValue.length > randomSentence?.content.length ||
+      !randomSentence?.content.startsWith(newValue)
+    ) {
+      setShake(true); // Trigger shake animation
+      setTimeout(() => setShake(false), 500); // Reset shake state after animation duration
+      return; // Prevent updating the input if it doesn't match the start of the original text
     }
-    setInputText(event.target.value);
+    setInputText(newValue);
     typingSound.play();
   };
 
@@ -128,7 +92,6 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
       isVisible &&
       isElementNotCovered(originalTextRef.current)
     ) {
-      console.log("focusing", isElementNotCovered(originalTextRef.current));
       inputRef.current.focus();
     } else {
       inputRef.current?.blur();
@@ -158,10 +121,17 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const onNext = useCallback(async () => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
-    setInputText("");
+
+    setIsFadingOut(true); // Start fade-out animation
     await triggerDisappear();
+    setIsFadingOut(false); // End fade-out animation
+
+    setInputText("");
     refreshRandom();
+
+    setIsFadingIn(true); // Start fade-in animation
     setTimeout(() => {
+      setIsFadingIn(false); // End fade-in animation
       isFetchingRef.current = false;
     }, 2000);
   }, [triggerDisappear, refreshRandom]);
@@ -197,74 +167,45 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   };
 
   return (
-    <div className="flex flex-col items-start justify-center gap-[48px] w-fit p-10">
-      <ResponsiveText
-        className="whitespace-pre-wrap"
-        targetLength={randomSentence?.content.length || 0}
-      >
-        <h1
-          className={classNames("font-lora", {
+    <div
+      className={classNames(
+        "flex flex-col items-start justify-center gap-[48px]  relative",
+        {
+          "animate-shake": shake,
+        }
+      )}
+    >
+      <div
+        className={classNames(
+          "font-lora text-[24px] w-[100%] relative h-[100%] z-1",
+          {
             "animate-fillBackground": animateBackground,
-          })}
-          style={{
-            color: "transparent", // Make the text color transparent
-            backgroundClip: "text", // Use background-clip to apply background color to text
-            WebkitBackgroundClip: "text", // For Webkit browsers
-            backgroundImage: `linear-gradient(to right,${
-              LikeColors[likeCount % LikeColors.length]
-            } 50%, ${LikeColors[(likeCount + 1) % LikeColors.length]} 50%)`, // Set the gradient for the animation
-            backgroundSize: "200% 100%", // Double the width for animation
-            display: "inline-block",
-          }}
-          ref={originalTextRef}
-        >
-          {_originalText.split("").map((char: string, index: number) => (
-            <Text key={index} wholeText={_originalText}>
-              {char === " " && <div className="w-[0.5ch]"></div>}
-              {char}
-            </Text>
-          ))}
-        </h1>
-      </ResponsiveText>
-
-      <input
+            "animate-fadeIn": isFadingIn,
+            "animate-fadeOut": isFadingOut,
+          }
+        )}
+        style={{
+          color: "transparent",
+          backgroundClip: "text",
+          WebkitBackgroundClip: "text",
+          backgroundImage: `linear-gradient(to right,${
+            LikeColors[likeCount % LikeColors.length]
+          } 50%, ${LikeColors[(likeCount + 1) % LikeColors.length]} 50%)`,
+          backgroundSize: "200% 100%",
+          display: "inline-block",
+        }}
+        ref={originalTextRef}
+      >
+        {_originalText}
+      </div>
+      <textarea
         ref={inputRef}
-        type="text"
         value={inputText}
         onChange={handleInputChange}
-        tabIndex={-1}
-        className="absolute left-[-9999px]"
+        className={classNames(
+          "font-lora focus:outline-none bg-transparent w-[100%] h-[100%] text-[24px] z-10 resize-none absolute top-0 left-0"
+        )}
       />
-      <ResponsiveText targetLength={_originalText.length || 0}>
-        <div
-          className="flex text-gray-600  overflow-visible h-[50px] mt-[50px] transition-opacity duration-700 w-full flex-wrap"
-          onClick={() => {
-            if (inputRef.current) {
-              inputRef.current.focus();
-            }
-          }}
-          ref={typedTextRef}
-        >
-          {_originalText.split("").map((char: string, index: number) => (
-            <div
-              key={index}
-              className={classNames("font-lora  overflow-visible", {
-                "animate-bounce ripple": inputText[index],
-                "text-red-500": inputText[index] && inputText[index] !== char, // Add red color if not matching
-                "animate-blink": index === inputText.length, // Add blinking cursor at the next position
-              })}
-              style={{
-                // width: "1ch", // Set width to match the font size
-                height: "1.5em", // Set height to match the font size
-                display: "inline-block",
-              }}
-            >
-              {char === " " && <div className="w-[0.5ch]"></div>}
-              {inputText[index] || (index === inputText.length ? "|" : " ")}
-            </div>
-          ))}
-        </div>
-      </ResponsiveText>
     </div>
   );
 };

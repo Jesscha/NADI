@@ -10,6 +10,9 @@ module.exports = {
         ripple: "ripple 1s ease-in-out",
         wave: "wave 5s infinite linear",
         twinkle: "twinkle 2s ease-in-out 1",
+        fadeIn: "fadeIn 1s ease-in-out",
+        fadeOut: "fadeOut 1s ease-in-out",
+        shake: "shake 0.5s ease-in-out",
       },
       keyframes: {
         bounce: {
@@ -39,6 +42,21 @@ module.exports = {
           "0%": { opacity: "0.2" },
           "50%": { opacity: "1" },
           "100%": { opacity: "0.2" },
+        },
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        fadeOut: {
+          "0%": { opacity: "1" },
+          "100%": { opacity: "0" },
+        },
+        shake: {
+          "0%": { transform: "translateY(0)" },
+          "25%": { transform: "translateY(-5px)" },
+          "50%": { transform: "translateY(5px)" },
+          "75%": { transform: "translateY(-5px)" },
+          "100%": { transform: "translateY(0)" },
         },
       },
     },
