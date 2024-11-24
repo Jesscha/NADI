@@ -27,7 +27,7 @@ function Writer({ isVisible }: { isVisible: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const userId = useAtomValue(userIdAtom);
+  const userInfo = useAtomValue(userIdAtom);
 
   useEffect(() => {
     if (inputRef.current && isVisible) {
@@ -37,10 +37,10 @@ function Writer({ isVisible }: { isVisible: boolean }) {
     }
   }, [isVisible]);
 
-  if (!userId && !isDev) return <>please login</>;
+  if (!userInfo && !isDev) return <>please login</>;
 
   const handleSubmit = async (event: React.FormEvent) => {
-    const _authId = userId || DEV_USER_ID;
+    const _authId = userInfo?.userId || DEV_USER_ID;
     event.preventDefault();
     setIsLoading(true);
     try {

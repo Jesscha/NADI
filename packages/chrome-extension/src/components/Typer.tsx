@@ -104,7 +104,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const isFetchingRef = useRef(false);
   const typedTextRef = useRef<HTMLDivElement>(null);
 
-  const userId = useAtomValue(userIdAtom);
+  const userInfo = useAtomValue(userIdAtom);
 
   const _originalText = randomSentence?.content || "";
 
@@ -176,7 +176,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
         event.preventDefault(); // Prevent default enter behavior
         completeSound.play();
         triggerAnimation();
-        likeSentence(randomSentence?.id || "", userId || DEV_USER_ID);
+        likeSentence(randomSentence?.id || "", userInfo?.userId || DEV_USER_ID);
         setInputText("");
         setTimeout(() => {
           setLikeCount((prev) => prev + 1);
@@ -189,7 +189,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [inputText, userId, randomSentence, onNext]);
+  }, [inputText, userInfo, randomSentence, onNext]);
 
   const triggerAnimation = () => {
     setAnimateBackground(true);

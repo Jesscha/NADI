@@ -1,15 +1,15 @@
+import { v4 as uuidv4 } from "uuid";
 import { useAtom } from "jotai";
 import { useEffect } from "react";
 import { userIdAtom } from "../atoms";
 
-export const useFirebaseAuth = () => {
+export const useAuth = () => {
   const [userId, setUserId] = useAtom(userIdAtom);
 
   useEffect(() => {
-    // Listen for messages from the background script
     chrome?.runtime?.onMessage?.addListener(async (message) => {
       if (message.type === "auth-success") {
-        setUserId(message.authData.user.uid);
+        setUserId({ location: "google", userId: message.authData.user.uid });
         if (message.authData.user) {
           try {
             console.log("User is authenticated. Adding document.");
@@ -23,7 +23,7 @@ export const useFirebaseAuth = () => {
     });
   }, [setUserId]);
 
-  const triggerAuth = () => {
+  const triggerGoogleAuth = () => {
     chrome.runtime.sendMessage(
       { type: "trigger-firebase-auth" },
       (response) => {
@@ -32,5 +32,10 @@ export const useFirebaseAuth = () => {
     );
   };
 
-  return { triggerAuth, userId };
+  const triggerLocalAuth = () => {
+    const uuid = uuidv4();
+    setUserId({ location: "local", userId: uuid });
+  };
+
+  return { triggerGoogleAuth, triggerLocalAuth, userId };
 };

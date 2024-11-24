@@ -43,10 +43,12 @@ export const DashboardModalButton = () => {
 
   useEffect(() => {
     if (isOpen) {
-      getLikedSentencesByUser(userId || DEV_USER_ID).then((sentences) => {
-        setLikedSentences(sentences);
-      });
-      getMySentencesByUser(userId || DEV_USER_ID).then((sentences) => {
+      getLikedSentencesByUser(userId?.userId || DEV_USER_ID).then(
+        (sentences) => {
+          setLikedSentences(sentences);
+        }
+      );
+      getMySentencesByUser(userId?.userId || DEV_USER_ID).then((sentences) => {
         setMySentences(sentences);
       });
     }
@@ -82,7 +84,8 @@ export const DashboardModalButton = () => {
                   <p>{sentence.content}</p>
 
                   <p className="text-sm text-gray-500">
-                    Liked {sentence.likesByUser[userId || DEV_USER_ID] || 0}{" "}
+                    Liked{" "}
+                    {sentence.likesByUser[userId?.userId || DEV_USER_ID] || 0}{" "}
                     times
                   </p>
                 </div>
