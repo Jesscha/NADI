@@ -74,9 +74,13 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = event.target.value;
+
+    const isKorean = /[\u3131-\uD79D]/.test(newValue);
+
     if (
-      newValue.length > randomSentence?.content.length ||
-      !randomSentence?.content.startsWith(newValue)
+      !isKorean &&
+      (newValue.length > randomSentence?.content.length ||
+        !randomSentence?.content.startsWith(newValue))
     ) {
       setShake(true); // Trigger shake animation
       setTimeout(() => setShake(false), 500); // Reset shake state after animation duration
@@ -142,15 +146,26 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
         event.preventDefault(); // Prevent default tab behavior
         onNext();
       }
-      if (event.key === "Enter" && randomSentence?.content === inputText) {
+
+      console.log(
+        randomSentence?.content.length,
+        inputText.length,
+        randomSentence?.content === inputText
+      );
+      if (event.key === "Enter") {
         event.preventDefault(); // Prevent default enter behavior
-        completeSound.play();
-        triggerAnimation();
-        likeSentence(randomSentence?.id || "", userInfo?.userId || DEV_USER_ID);
-        setInputText("");
-        setTimeout(() => {
-          setLikeCount((prev) => prev + 1);
-        }, 1000);
+        if (randomSentence?.content === inputText) {
+          completeSound.play();
+          triggerAnimation();
+          likeSentence(
+            randomSentence?.id || "",
+            userInfo?.userId || DEV_USER_ID
+          );
+          setInputText("");
+          setTimeout(() => {
+            setLikeCount((prev) => prev + 1);
+          }, 1000);
+        }
       }
     };
 

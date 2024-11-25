@@ -2,11 +2,38 @@ import React, { useEffect, useRef, useState } from "react";
 import { db } from "../firebase";
 import { addDoc, collection } from "firebase/firestore";
 
-import classNames from "classnames";
-import Modal from "./common/Modal";
 import { DEV_USER_ID, isDev } from "../constants";
 import { useAtomValue } from "jotai";
 import { userIdAtom } from "../atoms";
+import { TypingModal } from "./common/TypingModal";
+import { isElementNotCovered } from "../utils";
+
+const ConfirmModal = ({
+  isOpen,
+  onClose,
+  upLoadSentence,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  upLoadSentence: () => void;
+}) => {
+  return (
+    <TypingModal
+      topArea={
+        <h1 className="text-2xl font-bold mb-[16px]">
+          Your words' journey begins
+        </h1>
+      }
+      isOpen={isOpen}
+      onClose={onClose}
+      firstWord="OK"
+      secondWord="NO"
+      placeholder="OK to share, NO to cancel"
+      firstAction={upLoadSentence}
+      secondAction={onClose}
+    />
+  );
+};
 
 function uploadSentence(content: string, authorId: string) {
   return addDoc(collection(db, "sentences"), {
@@ -24,13 +51,16 @@ function uploadSentence(content: string, authorId: string) {
 function Writer({ isVisible }: { isVisible: boolean }) {
   const [sentence, setSentence] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const userInfo = useAtomValue(userIdAtom);
 
   useEffect(() => {
-    if (inputRef.current && isVisible) {
+    if (
+      inputRef.current &&
+      isVisible &&
+      isElementNotCovered(inputRef.current)
+    ) {
       inputRef.current.focus();
     } else {
       inputRef.current?.blur();
@@ -39,18 +69,12 @@ function Writer({ isVisible }: { isVisible: boolean }) {
 
   if (!userInfo && !isDev) return <>please login</>;
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async () => {
     const _authId = userInfo?.userId || DEV_USER_ID;
-    event.preventDefault();
     setIsLoading(true);
     try {
       await uploadSentence(sentence, _authId);
       setSentence(""); // Clear the input field after successful upload
-      setIsSubmitted(true); // Set the submitted state to true
-      setTimeout(() => {
-        setIsSubmitted(false);
-        setSentence("");
-      }, 3000);
     } catch (error) {
       console.error("Error uploading sentence:", error);
     } finally {
@@ -58,72 +82,42 @@ function Writer({ isVisible }: { isVisible: boolean }) {
     }
   };
 
-  console.log([...sentence.split(""), ""]);
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      setIsModalOpen(true);
+    }
+  };
 
   return (
     <div className="flex flex-col items-start justify-start gap-[48px] text-black p-10 h-full w-full ">
       <div className="text-2xl font-lora">Drop you thought here</div>
-
-      <div
-        className="flex flex-row gap-[1px] flex-wrap"
-        onClick={() => {
-          inputRef.current?.focus();
-        }}
-      >
-        {[...sentence.split(""), ""].map((char, index) => {
-          return (
-            <div
-              key={index}
-              className={classNames("font-lora border-b-solid text-[32px]", {
-                ripple: sentence[index] && !isSubmitted,
-                "animate-blink": index === sentence.length && !isSubmitted,
-                smoky: isSubmitted,
-                "smoky-mirror": isSubmitted && index % 2 === 0,
-              })}
-            >
-              {char === " " && <div className="w-[0.5ch]"></div>}
-
-              {index === sentence.length ? "|" : char}
-            </div>
-          );
-        })}
-      </div>
-
       <form
         onSubmit={(e) => {
           e.preventDefault();
           setIsModalOpen(true);
         }}
+        className="flex flex-col items-start justify-start gap-[48px] text-gray-600  h-full w-full "
       >
-        <input
+        <textarea
+          className="font-lora focus:outline-none bg-transparent w-[100%] h-[100%] text-[24px]  resize-none "
           tabIndex={-1}
-          className="absolute left-[-9999px]"
-          type="text"
           value={sentence}
           onChange={(e) => setSentence(e.target.value)}
+          onKeyDown={handleKeyPress}
           placeholder="Write your sentence here"
           disabled={isLoading}
           ref={inputRef}
         />
       </form>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <div className="font-lora flex flex-col items-center justify-between h-full">
-          <div className="flex flex-col items-center justify-center gap-2">
-            Are you sure you want to submit this sentence?
-            <div className="text-sm">Enter to proceed.</div>
-          </div>
-
-          <button
-            className="bg-black text-white px-4 py-2 rounded-lg"
-            onClick={(e) => {
-              setIsModalOpen(false);
-              handleSubmit(e);
-            }}
-          >
-            Submit
-          </button>
-        </div>
-      </Modal>
+      <ConfirmModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        upLoadSentence={() => {
+          handleSubmit();
+          setIsModalOpen(false);
+        }}
+      />
     </div>
   );
 }

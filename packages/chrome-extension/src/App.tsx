@@ -50,7 +50,7 @@ function App() {
       <div className="h-screen w-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide absolute">
         <div
           ref={typerRef}
-          className="snap-start h-screen flex justify-center items-center"
+          className="snap-start h-screen flex justify-center items-center p-5"
         >
           <Typer isVisible={isTyperVisible} />
         </div>
