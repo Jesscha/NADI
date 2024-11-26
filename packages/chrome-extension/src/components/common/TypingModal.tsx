@@ -66,7 +66,13 @@ export const TypingModal = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal
+      isOpen={isOpen}
+      onClose={() => {
+        onClose();
+        setInputValue("");
+      }}
+    >
       <div className="flex flex-col items-center justify-center bg-white p-[32px] rounded-lg">
         {topArea}
         <div className="relative mt-6">
