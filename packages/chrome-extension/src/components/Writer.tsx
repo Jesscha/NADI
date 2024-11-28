@@ -36,14 +36,13 @@ const ConfirmModal = ({
 };
 
 function uploadSentence(content: string, authorId: string) {
-  return addDoc(collection(db, "sentences"), {
+  return addDoc(collection(db, "sentences_candidates"), {
     content: content,
     authorId: authorId,
     likes: 0,
     likedBy: [],
     likesByUser: {},
   }).then((docRef) => {
-    console.log("Document written with ID: ", docRef.id);
     return docRef.id; // 새 문장 ID 반환
   });
 }
