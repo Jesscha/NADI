@@ -1,11 +1,22 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { TypingModal } from "./common/TypingModal";
 export const LoginModal = () => {
   const { userId, triggerGoogleAuth, triggerLocalAuth } = useAuth();
 
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setIsOpen(userId === null);
+    }, 1000);
+
+    return () => clearTimeout(timeout);
+  }, [userId]);
+
   return (
     <TypingModal
-      isOpen={userId === null}
+      isOpen={isOpen}
       onClose={() => {}}
       topArea={
         <>

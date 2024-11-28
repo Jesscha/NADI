@@ -32,7 +32,6 @@ async function likeSentence(sentenceId: string, userId: string) {
       },
     });
   });
-  console.log("Like added!");
 }
 
 const LikeColors = [
@@ -153,7 +152,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
 
       if (event.key === "Enter") {
         event.preventDefault(); // Prevent default enter behavior
-        if (randomSentence?.content === inputText) {
+        if (randomSentence?.content.trim() === inputText.trim()) {
           completeSound.play();
           triggerAnimation();
           likeSentence(

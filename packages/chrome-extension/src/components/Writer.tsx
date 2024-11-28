@@ -51,6 +51,7 @@ function uploadSentence(content: string, authorId: string) {
 function Writer({ isVisible }: { isVisible: boolean }) {
   const [sentence, setSentence] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isFading, setIsFading] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const userInfo = useAtomValue(userIdAtom);
@@ -59,13 +60,14 @@ function Writer({ isVisible }: { isVisible: boolean }) {
     if (
       inputRef.current &&
       isVisible &&
-      isElementNotCovered(inputRef.current)
+      isElementNotCovered(inputRef.current) &&
+      !isModalOpen
     ) {
       inputRef.current.focus();
     } else {
       inputRef.current?.blur();
     }
-  }, [isVisible]);
+  }, [isVisible, isModalOpen]);
 
   if (!userInfo && !isDev) return <>please login</>;
 
@@ -73,8 +75,14 @@ function Writer({ isVisible }: { isVisible: boolean }) {
     const _authId = userInfo?.userId || DEV_USER_ID;
     setIsLoading(true);
     try {
-      await uploadSentence(sentence, _authId);
-      setSentence(""); // Clear the input field after successful upload
+      const trimmedSentence = sentence.trim();
+      await uploadSentence(trimmedSentence, _authId);
+
+      setIsFading(true);
+      setTimeout(() => {
+        setSentence("");
+        setIsFading(false);
+      }, 500);
     } catch (error) {
       console.error("Error uploading sentence:", error);
     } finally {
@@ -100,7 +108,9 @@ function Writer({ isVisible }: { isVisible: boolean }) {
         className="flex flex-col items-start justify-start gap-[48px] text-gray-600  h-full w-full "
       >
         <textarea
-          className="font-lora focus:outline-none bg-transparent w-[100%] h-[100%] text-[24px]  resize-none "
+          className={`font-lora focus:outline-none bg-transparent w-[100%] h-[100%] text-[24px] resize-none transition-opacity duration-500 ${
+            isFading ? "opacity-0" : "opacity-100"
+          }`}
           tabIndex={-1}
           value={sentence}
           onChange={(e) => setSentence(e.target.value)}
