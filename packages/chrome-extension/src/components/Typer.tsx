@@ -66,6 +66,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
 
   const [animateBackground, setAnimateBackground] = useState(false);
   const [shake, setShake] = useState(false);
+  const userId = useAtomValue(userIdAtom);
 
   useEffect(() => {
     setInputText("");
@@ -100,10 +101,16 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
       isElementNotCovered(originalTextRef.current)
     ) {
       inputRef.current.focus();
-    } else {
-      inputRef.current?.blur();
     }
   }, [isVisible]);
+
+  useEffect(() => {
+    if (userId) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 500);
+    }
+  }, [userId]);
 
   const triggerDisappear = useCallback(() => {
     const originalTextDom = originalTextRef.current;
