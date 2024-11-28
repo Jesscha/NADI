@@ -27,7 +27,15 @@ export const TypingModal = ({
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toUpperCase();
-    setInputValue(value);
+    const valueBefore = value.substring(0, value.length - 1);
+    if (firstWord.startsWith(valueBefore) && firstWord.startsWith(value)) {
+      setInputValue(value);
+    } else if (
+      secondWord.startsWith(valueBefore) &&
+      secondWord.startsWith(value)
+    ) {
+      setInputValue(value);
+    }
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -56,7 +64,7 @@ export const TypingModal = ({
     if (inputValue === "") {
       return placeholder;
     }
-
+    // block wrong typing if it is on certain word's track
     if (firstWord.startsWith(inputValue)) {
       return firstWord;
     } else if (secondWord.startsWith(inputValue)) {
