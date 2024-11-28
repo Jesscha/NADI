@@ -69,6 +69,10 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [shake, setShake] = useState(false);
 
   useEffect(() => {
+    setInputText("");
+  }, [randomSentence]);
+
+  useEffect(() => {
     setLikeCount(0);
   }, [randomSentence]);
 
@@ -147,11 +151,6 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
         onNext();
       }
 
-      console.log(
-        randomSentence?.content.length,
-        inputText.length,
-        randomSentence?.content === inputText
-      );
       if (event.key === "Enter") {
         event.preventDefault(); // Prevent default enter behavior
         if (randomSentence?.content === inputText) {
