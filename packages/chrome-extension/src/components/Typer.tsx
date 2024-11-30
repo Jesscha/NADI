@@ -33,18 +33,17 @@ async function likeSentence(sentenceId: string, userId: string) {
     });
   });
 }
-
 const LikeColors = [
-  "gray", // 황금빛
-  "darkorange", // 더 강렬한 오렌지
-  "orangered", // 붉은 오렌지
-  "tomato", // 토마토색
-  "crimson", // 진한 빨간색
-  "red", // 강렬한 빨간색
-  "firebrick", // 어두운 빨간색
-  "darkred", // 매우 어두운 빨간색
-  "maroon", // 밤색
-  "saddlebrown", // 짙은 갈색
+  "darkgray", // 짙은 회색
+  "gray", // 회색
+  "silver", // 은색
+  "lightgray", // 밝은 회색
+  "cyan", // 시안색
+  "green", // 초록색
+  "blue", // 파란색
+  "indigo", // 남색
+  "violet", // 보라색
+  "pink", // 분홍색
 ];
 
 export const Typer = ({ isVisible }: { isVisible: boolean }) => {
