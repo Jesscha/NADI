@@ -34,16 +34,17 @@ async function likeSentence(sentenceId: string, userId: string) {
   });
 }
 const LikeColors = [
-  "darkgray", // 짙은 회색
-  "gray", // 회색
-  "silver", // 은색
-  "lightgray", // 밝은 회색
-  "cyan", // 시안색
-  "green", // 초록색
-  "blue", // 파란색
-  "indigo", // 남색
-  "violet", // 보라색
-  "pink", // 분홍색
+  "gray",
+  "darkred",
+  "darkorange",
+  "goldenrod",
+  "darkgreen",
+  "darkcyan",
+  "darkblue",
+  "darkviolet",
+  "darkmagenta",
+  "darkslateblue",
+  "darkorchid",
 ];
 
 export const Typer = ({ isVisible }: { isVisible: boolean }) => {
@@ -52,20 +53,16 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [isFadingIn, setIsFadingIn] = useState(false);
   const { refreshRandom, selectedSentence } = useSentence();
   const [likeCount, setLikeCount] = useState(0);
-
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const originalTextRef = useRef<HTMLHeadingElement>(null);
   const isFetchingRef = useRef(false);
-  const typedTextRef = useRef<HTMLDivElement>(null);
 
   const userInfo = useAtomValue(userIdAtom);
 
   useEffect(() => {
     if (selectedSentence) {
       const likesByUser = selectedSentence.likesByUser;
-      console.log(likesByUser, userInfo?.userId);
       const userLikes = likesByUser?.[userInfo?.userId || DEV_USER_ID] || 0;
-      console.log(userLikes);
       setLikeCount(userLikes);
     } else {
       setLikeCount(0);
@@ -92,9 +89,9 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
       (newValue.length > selectedSentence?.content.length ||
         !selectedSentence?.content.startsWith(newValue))
     ) {
-      setShake(true); // Trigger shake animation
-      setTimeout(() => setShake(false), 500); // Reset shake state after animation duration
-      return; // Prevent updating the input if it doesn't match the start of the original text
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
     }
     setInputText(newValue);
     typingSound.play();
@@ -118,53 +115,30 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
     }
   }, [userId]);
 
-  const triggerDisappear = useCallback(() => {
-    const originalTextDom = originalTextRef.current;
-    const typedTextDom = typedTextRef.current;
-
-    if (originalTextDom && typedTextDom) {
-      originalTextDom.style.transition = "opacity 0.5s ease-out";
-    }
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-        setTimeout(() => {
-          const typedTextDom = typedTextRef.current;
-          if (typedTextDom) {
-            // typedTextDom.style.opacity = "1";
-          }
-        }, 2000);
-      }, 800);
-    });
-  }, []);
-
   const onNext = useCallback(async () => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
-
-    setIsFadingOut(true); // Start fade-out animation
-    await triggerDisappear();
-    setIsFadingOut(false); // End fade-out animation
-
+    setIsFadingOut(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    setIsFadingOut(false);
     setInputText("");
     refreshRandom();
-
-    setIsFadingIn(true); // Start fade-in animation
+    setIsFadingIn(true);
     setTimeout(() => {
       setIsFadingIn(false); // End fade-in animation
       isFetchingRef.current = false;
-    }, 2000);
-  }, [triggerDisappear, refreshRandom]);
+    }, 1000);
+  }, [refreshRandom]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Tab") {
-        event.preventDefault(); // Prevent default tab behavior
+        event.preventDefault();
         onNext();
       }
 
       if (event.key === "Enter") {
-        event.preventDefault(); // Prevent default enter behavior
+        event.preventDefault();
         if (selectedSentence?.content.trim() === inputText.trim()) {
           completeSound.play();
           triggerAnimation();
@@ -189,7 +163,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
 
   const triggerAnimation = () => {
     setAnimateBackground(true);
-    setTimeout(() => setAnimateBackground(false), 1000); // Reset after animation duration
+    setTimeout(() => setAnimateBackground(false), 1000);
   };
 
   return (

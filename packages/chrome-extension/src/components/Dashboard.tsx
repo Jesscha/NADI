@@ -26,13 +26,25 @@ async function getLikedSentencesByUser(userId: string) {
 }
 
 async function getMySentencesByUser(userId: string) {
+  const q_candidates = query(
+    collection(db, "sentences_candidates"),
+    where("authorId", "==", userId)
+  );
+  const querySnapshot_candidates = await getDocs(q_candidates);
+  const sentencesCandidates = querySnapshot_candidates.docs.map((doc) => ({
+    id: doc.id,
+    isCandidate: true,
+    ...doc.data(),
+  }));
+
   const q = query(collection(db, "sentences"), where("authorId", "==", userId));
   const querySnapshot = await getDocs(q);
   const sentences = querySnapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   }));
-  return sentences;
+
+  return [...sentences, ...sentencesCandidates];
 }
 
 export const DashboardModalButton = ({
@@ -69,7 +81,7 @@ export const DashboardModalButton = ({
       </button>
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>
-        <div className="w-full h-full bg-gray-100 p-6 relative">
+        <div className="w-full h-full bg-gray-100 p-6 relative overflow-auto">
           <button
             className="text-gray-500 absolute top-[16px] right-[16px] text-[12px]"
             onClick={() => setIsOpen(false)}
@@ -84,7 +96,7 @@ export const DashboardModalButton = ({
               likedSentences.map((sentence) => (
                 <button
                   key={sentence.id}
-                  className="bg-white p-4 mb-2 rounded shadow-md"
+                  className="bg-white p-4 mb-2 rounded shadow-md w-full text-start"
                   onClick={() => {
                     moveScroll();
                     setIsOpen(false);
@@ -110,7 +122,7 @@ export const DashboardModalButton = ({
               mySentences.map((sentence) => (
                 <button
                   key={sentence.id}
-                  className="bg-white p-4 mb-2 rounded shadow-md w-full"
+                  className="bg-white p-4 mb-2 rounded shadow-md w-full text-start"
                   onClick={() => {
                     moveScroll();
                     setIsOpen(false);
@@ -122,6 +134,11 @@ export const DashboardModalButton = ({
                     Liked by {sentence.likedBy.length} people, {sentence.likes}{" "}
                     times in total
                   </p>
+                  {sentence.isCandidate && (
+                    <p className="text-sm text-gray-500">
+                      (waiting to be published)
+                    </p>
+                  )}
                 </button>
               ))
             ) : (
