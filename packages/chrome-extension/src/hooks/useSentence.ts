@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { getDocs, collection, DocumentData } from "firebase/firestore";
 import { db } from "../firebase";
+import { sentenceAtom } from "../atoms";
+import { useAtom } from "jotai";
 
-function useRandomSentence() {
+function useSentence() {
   const [sentences, setSentences] = useState<DocumentData[]>([]);
-  const [randomSentence, setRandomSentence] = useState<DocumentData | null>(
-    null
-  );
+  const [selectedSentence, setSelectedSentence] = useAtom(sentenceAtom);
 
   useEffect(() => {
     const fetchSentences = async () => {
@@ -26,8 +26,8 @@ function useRandomSentence() {
         do {
           randomIndex = Math.floor(Math.random() * sentences.length);
           randomDoc = sentences[randomIndex];
-        } while (randomDoc.id === randomSentence?.id);
-        setRandomSentence(randomDoc);
+        } while (randomDoc.id === selectedSentence?.id);
+        setSelectedSentence(randomDoc);
       }
     };
 
@@ -47,12 +47,12 @@ function useRandomSentence() {
       do {
         randomIndex = Math.floor(Math.random() * sentences.length);
         randomDoc = sentences[randomIndex];
-      } while (randomDoc.id === randomSentence?.id);
-      setRandomSentence(randomDoc);
+      } while (randomDoc.id === selectedSentence?.id);
+      setSelectedSentence(randomDoc);
     }
   };
 
-  return { refreshRandom, randomSentence };
+  return { refreshRandom, selectedSentence };
 }
 
-export default useRandomSentence;
+export default useSentence;

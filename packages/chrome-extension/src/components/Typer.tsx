@@ -5,7 +5,7 @@ import { userIdAtom } from "../atoms";
 import { DEV_USER_ID } from "../constants";
 import { arrayUnion, doc, runTransaction } from "firebase/firestore";
 import { db } from "../firebase";
-import useRandomSentence from "../hooks/useRandomSentence";
+import useSentence from "../hooks/useSentence";
 import { isElementNotCovered } from "../utils";
 
 const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
@@ -51,8 +51,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [inputText, setInputText] = useState("");
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isFadingIn, setIsFadingIn] = useState(false);
-  const { refreshRandom, randomSentence } = useRandomSentence();
-
+  const { refreshRandom, selectedSentence } = useSentence();
   const [likeCount, setLikeCount] = useState(0);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -62,7 +61,19 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
 
   const userInfo = useAtomValue(userIdAtom);
 
-  const _originalText = randomSentence?.content || "";
+  useEffect(() => {
+    if (selectedSentence) {
+      const likesByUser = selectedSentence.likesByUser;
+      console.log(likesByUser, userInfo?.userId);
+      const userLikes = likesByUser?.[userInfo?.userId || DEV_USER_ID] || 0;
+      console.log(userLikes);
+      setLikeCount(userLikes);
+    } else {
+      setLikeCount(0);
+    }
+  }, [selectedSentence, userInfo]);
+
+  const _originalText = selectedSentence?.content || "";
 
   const [animateBackground, setAnimateBackground] = useState(false);
   const [shake, setShake] = useState(false);
@@ -70,11 +81,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
 
   useEffect(() => {
     setInputText("");
-  }, [randomSentence]);
-
-  useEffect(() => {
-    setLikeCount(0);
-  }, [randomSentence]);
+  }, [selectedSentence]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = event.target.value;
@@ -83,8 +90,8 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
 
     if (
       !isKorean &&
-      (newValue.length > randomSentence?.content.length ||
-        !randomSentence?.content.startsWith(newValue))
+      (newValue.length > selectedSentence?.content.length ||
+        !selectedSentence?.content.startsWith(newValue))
     ) {
       setShake(true); // Trigger shake animation
       setTimeout(() => setShake(false), 500); // Reset shake state after animation duration
@@ -159,11 +166,11 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
 
       if (event.key === "Enter") {
         event.preventDefault(); // Prevent default enter behavior
-        if (randomSentence?.content.trim() === inputText.trim()) {
+        if (selectedSentence?.content.trim() === inputText.trim()) {
           completeSound.play();
           triggerAnimation();
           likeSentence(
-            randomSentence?.id || "",
+            selectedSentence?.id || "",
             userInfo?.userId || DEV_USER_ID
           );
           setInputText("");
@@ -179,7 +186,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [inputText, userInfo, randomSentence, onNext]);
+  }, [inputText, userInfo, selectedSentence, onNext]);
 
   const triggerAnimation = () => {
     setAnimateBackground(true);

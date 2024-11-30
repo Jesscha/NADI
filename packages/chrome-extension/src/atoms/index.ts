@@ -1,3 +1,5 @@
+import { DocumentData } from "firebase/firestore";
+import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
 type UserInfo = {
@@ -7,5 +9,6 @@ type UserInfo = {
 
 // Create an atom that syncs with local storage
 const userIdAtom = atomWithStorage<UserInfo | null>("userId", null);
+const sentenceAtom = atom<DocumentData | null>(null);
 
-export { userIdAtom };
+export { userIdAtom, sentenceAtom };

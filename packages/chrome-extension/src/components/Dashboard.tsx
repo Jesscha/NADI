@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Modal from "./common/Modal";
-import { useAtomValue } from "jotai";
-import { userIdAtom } from "../atoms";
+import { useAtomValue, useSetAtom } from "jotai";
+import { sentenceAtom, userIdAtom } from "../atoms";
 import {
   DocumentData,
   collection,
@@ -35,11 +35,16 @@ async function getMySentencesByUser(userId: string) {
   return sentences;
 }
 
-export const DashboardModalButton = () => {
+export const DashboardModalButton = ({
+  moveScroll,
+}: {
+  moveScroll: () => void;
+}) => {
   const userId = useAtomValue(userIdAtom);
   const [isOpen, setIsOpen] = useState(false);
   const [likedSentences, setLikedSentences] = useState<DocumentData[]>([]);
   const [mySentences, setMySentences] = useState<DocumentData[]>([]);
+  const setSelectedSentence = useSetAtom(sentenceAtom);
 
   useEffect(() => {
     if (isOpen) {
@@ -77,9 +82,14 @@ export const DashboardModalButton = () => {
           <div className="mb-8">
             {likedSentences.length > 0 ? (
               likedSentences.map((sentence) => (
-                <div
+                <button
                   key={sentence.id}
                   className="bg-white p-4 mb-2 rounded shadow-md"
+                  onClick={() => {
+                    moveScroll();
+                    setIsOpen(false);
+                    setSelectedSentence(sentence);
+                  }}
                 >
                   <p>{sentence.content}</p>
 
@@ -88,7 +98,7 @@ export const DashboardModalButton = () => {
                     {sentence.likesByUser[userId?.userId || DEV_USER_ID] || 0}{" "}
                     times
                   </p>
-                </div>
+                </button>
               ))
             ) : (
               <p className="text-gray-500">No liked sentences found.</p>
@@ -98,16 +108,21 @@ export const DashboardModalButton = () => {
           <div>
             {mySentences.length > 0 ? (
               mySentences.map((sentence) => (
-                <div
+                <button
                   key={sentence.id}
-                  className="bg-white p-4 mb-2 rounded shadow-md"
+                  className="bg-white p-4 mb-2 rounded shadow-md w-full"
+                  onClick={() => {
+                    moveScroll();
+                    setIsOpen(false);
+                    setSelectedSentence(sentence);
+                  }}
                 >
                   <p>{sentence.content}</p>
                   <p className="text-sm text-gray-500">
                     Liked by {sentence.likedBy.length} people, {sentence.likes}{" "}
                     times in total
                   </p>
-                </div>
+                </button>
               ))
             ) : (
               <p className="text-gray-500">No sentences written by you.</p>

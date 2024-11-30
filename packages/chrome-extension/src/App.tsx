@@ -39,10 +39,16 @@ function App() {
   const isTyperVisible = useIsVisible(typerRef);
   const isWriterVisible = useIsVisible(writerRef);
 
+  const moveScrollToTyper = () => {
+    if (typerRef.current) {
+      typerRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <>
       <div className="fixed top-0 left-0 z-10">
-        <DashboardModalButton />
+        <DashboardModalButton moveScroll={moveScrollToTyper} />
       </div>
       <div className="fixed bottom-0 right-0 z-10">
         <Instruction focusZone={isTyperVisible ? "type" : "write"} />
