@@ -1,5 +1,6 @@
 {
   "name": "admin",
+  "type": "module",
   "version": "0.0.0",
   "description": "> TODO: description",
   "author": "Jesscha <jessecha222@gmail.com>",
@@ -18,7 +19,8 @@
     "url": "git+https://github.com/Jesscha/NADI.git"
   },
   "scripts": {
-    "test": "node ./__tests__/admin.test.js"
+    "test": "node ./__tests__/admin.test.js",
+    "dev": "vite"
   },
   "bugs": {
     "url": "https://github.com/Jesscha/NADI/issues"
