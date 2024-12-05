@@ -3,7 +3,7 @@ import classNames from "classnames";
 import { useAtomValue } from "jotai";
 import { userIdAtom } from "../atoms";
 import { DEV_USER_ID } from "../constants";
-import { arrayUnion, doc, runTransaction } from "firebase/firestore";
+import { doc, runTransaction } from "firebase/firestore";
 import { db } from "../firebase";
 import useSentence from "../hooks/useSentence";
 import { isElementNotCovered } from "../utils";
@@ -12,25 +12,36 @@ const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing 
 const completeSound = new Audio("/activation-sound.mp3");
 
 async function likeSentence(sentenceId: string, userId: string) {
-  const sentenceRef = doc(db, "sentences", sentenceId);
-
+  const likesRef = doc(db, "likes", userId);
   await runTransaction(db, async (transaction) => {
-    const docSnapshot = await transaction.get(sentenceRef);
+    const docSnapshot = await transaction.get(likesRef);
+    let data = {} as {
+      userId: string;
+      likedSentences: {
+        [sentenceId: string]: number;
+      };
+    };
     if (!docSnapshot.exists()) {
-      throw "Document does not exist!";
+      transaction.set(likesRef, {
+        userId,
+        likedSentences: {},
+      });
+      data = {
+        userId,
+        likedSentences: {},
+      };
+    } else {
+      data = docSnapshot.data() as {
+        userId: string;
+        likedSentences: {
+          [sentenceId: string]: number;
+        };
+      };
     }
-    const data = docSnapshot.data();
-    const newLikes = (data?.likes || 0) + 1;
-    const userLikes = (data?.likesByUser?.[userId] || 0) + 1;
+    data.likedSentences[sentenceId] =
+      (data.likedSentences[sentenceId] || 0) + 1;
 
-    transaction.update(sentenceRef, {
-      likes: newLikes,
-      likedBy: arrayUnion(userId),
-      likesByUser: {
-        ...data?.likesByUser,
-        [userId]: userLikes,
-      },
-    });
+    transaction.update(likesRef, data);
   });
 }
 const LikeColors = [

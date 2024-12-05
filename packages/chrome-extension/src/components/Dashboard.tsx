@@ -5,6 +5,7 @@ import { sentenceAtom, userIdAtom } from "../atoms";
 import {
   DocumentData,
   collection,
+  documentId,
   getDocs,
   query,
   where,
@@ -13,16 +14,25 @@ import { db } from "../firebase";
 import { DEV_USER_ID } from "../constants";
 
 async function getLikedSentencesByUser(userId: string) {
-  const q = query(
-    collection(db, "sentences"),
-    where("likedBy", "array-contains", userId)
-  );
+  const q = query(collection(db, "likes"), where("userId", "==", userId));
   const querySnapshot = await getDocs(q);
-  const sentences = querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-  return sentences;
+  if (!querySnapshot.empty) {
+    const data = querySnapshot.docs[0].data();
+    const likedSentenses = Object.keys(data.likedSentences);
+    const sentenseQ = query(
+      collection(db, "sentences"),
+      where(documentId(), "in", likedSentenses)
+    );
+
+    const sentenseQuerySnapshot = await getDocs(sentenseQ);
+
+    return sentenseQuerySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      likes: data.likedSentences[doc.id],
+    }));
+  }
+  return [];
 }
 
 async function getMySentencesByUser(userId: string) {
@@ -44,7 +54,37 @@ async function getMySentencesByUser(userId: string) {
     ...doc.data(),
   }));
 
-  return [...sentences, ...sentencesCandidates];
+  // Fetch all likes
+  const likesSnapshot = await getDocs(collection(db, "likes"));
+  const likesData = likesSnapshot.docs.reduce((acc, doc) => {
+    const data = doc.data();
+    Object.keys(data.likedSentences).forEach((sentenceId) => {
+      if (!acc[sentenceId]) {
+        acc[sentenceId] = {
+          totalLikes: 0,
+          likedByCount: 0,
+        };
+      }
+      acc[sentenceId].totalLikes += data.likedSentences[sentenceId];
+      acc[sentenceId].likedByCount += 1; // Increment unique users count
+    });
+    return acc;
+  }, {} as { [key: string]: { totalLikes: number; likedByCount: number } });
+
+  // Update the mapping to include both metrics
+  const sentencesWithLikes = sentences.map((sentence) => ({
+    ...sentence,
+    likes: likesData[sentence.id]?.totalLikes || 0,
+    likedByCount: likesData[sentence.id]?.likedByCount || 0,
+  }));
+
+  const sentencesCandidatesWithLikes = sentencesCandidates.map((sentence) => ({
+    ...sentence,
+    likes: likesData[sentence.id]?.totalLikes || 0,
+    likedByCount: likesData[sentence.id]?.likedByCount || 0,
+  }));
+
+  return [...sentencesWithLikes, ...sentencesCandidatesWithLikes];
 }
 
 export const DashboardModalButton = ({
@@ -59,17 +99,13 @@ export const DashboardModalButton = ({
   const setSelectedSentence = useSetAtom(sentenceAtom);
 
   useEffect(() => {
-    if (isOpen) {
-      getLikedSentencesByUser(userId?.userId || DEV_USER_ID).then(
-        (sentences) => {
-          setLikedSentences(sentences);
-        }
-      );
-      getMySentencesByUser(userId?.userId || DEV_USER_ID).then((sentences) => {
-        setMySentences(sentences);
-      });
-    }
-  }, [isOpen, userId]);
+    getLikedSentencesByUser(userId?.userId || DEV_USER_ID).then((sentences) => {
+      setLikedSentences(sentences);
+    });
+    getMySentencesByUser(userId?.userId || DEV_USER_ID).then((sentences) => {
+      setMySentences(sentences);
+    });
+  }, [userId, isOpen]);
 
   return (
     <div>
@@ -131,7 +167,7 @@ export const DashboardModalButton = ({
                 >
                   <p>{sentence.content}</p>
                   <p className="text-sm text-gray-500">
-                    Liked by {sentence.likedBy.length} people, {sentence.likes}{" "}
+                    Liked by {sentence.likedByCount} people, {sentence.likes}{" "}
                     times in total
                   </p>
                   {sentence.isCandidate && (
