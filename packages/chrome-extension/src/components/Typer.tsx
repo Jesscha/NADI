@@ -3,34 +3,44 @@ import classNames from "classnames";
 import { useAtomValue } from "jotai";
 import { userIdAtom } from "../atoms";
 import { DEV_USER_ID } from "../constants";
-import { arrayUnion, doc, runTransaction } from "firebase/firestore";
+import { doc, runTransaction } from "firebase/firestore";
 import { db } from "../firebase";
 import useSentence from "../hooks/useSentence";
 import { isElementNotCovered } from "../utils";
 
-const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
 const completeSound = new Audio("/activation-sound.mp3");
 
 async function likeSentence(sentenceId: string, userId: string) {
-  const sentenceRef = doc(db, "sentences", sentenceId);
-
+  const likesRef = doc(db, "likes", userId);
   await runTransaction(db, async (transaction) => {
-    const docSnapshot = await transaction.get(sentenceRef);
+    const docSnapshot = await transaction.get(likesRef);
+    let data = {} as {
+      userId: string;
+      likedSentences: {
+        [sentenceId: string]: number;
+      };
+    };
     if (!docSnapshot.exists()) {
-      throw "Document does not exist!";
+      transaction.set(likesRef, {
+        userId,
+        likedSentences: {},
+      });
+      data = {
+        userId,
+        likedSentences: {},
+      };
+    } else {
+      data = docSnapshot.data() as {
+        userId: string;
+        likedSentences: {
+          [sentenceId: string]: number;
+        };
+      };
     }
-    const data = docSnapshot.data();
-    const newLikes = (data?.likes || 0) + 1;
-    const userLikes = (data?.likesByUser?.[userId] || 0) + 1;
+    data.likedSentences[sentenceId] =
+      (data.likedSentences[sentenceId] || 0) + 1;
 
-    transaction.update(sentenceRef, {
-      likes: newLikes,
-      likedBy: arrayUnion(userId),
-      likesByUser: {
-        ...data?.likesByUser,
-        [userId]: userLikes,
-      },
-    });
+    transaction.update(likesRef, data);
   });
 }
 const LikeColors = [
@@ -50,8 +60,9 @@ const LikeColors = [
 export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [inputText, setInputText] = useState("");
   const [isFadingOut, setIsFadingOut] = useState(false);
-  const [isFadingIn, setIsFadingIn] = useState(false);
-  const { refreshRandom, selectedSentence } = useSentence();
+  const [isFadingIn, setIsFadingIn] = useState(true);
+  const userId = useAtomValue(userIdAtom);
+  const { refreshRandom, selectedSentence } = useSentence(userId?.userId);
   const [likeCount, setLikeCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const originalTextRef = useRef<HTMLHeadingElement>(null);
@@ -61,40 +72,37 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
 
   useEffect(() => {
     if (selectedSentence) {
-      const likesByUser = selectedSentence.likesByUser;
-      const userLikes = likesByUser?.[userInfo?.userId || DEV_USER_ID] || 0;
-      setLikeCount(userLikes);
+      setLikeCount(selectedSentence.likeCount);
     } else {
       setLikeCount(0);
     }
   }, [selectedSentence, userInfo]);
 
-  const _originalText = selectedSentence?.content || "";
-
   const [animateBackground, setAnimateBackground] = useState(false);
   const [shake, setShake] = useState(false);
-  const userId = useAtomValue(userIdAtom);
 
   useEffect(() => {
     setInputText("");
   }, [selectedSentence]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
+    typingSound.playbackRate = 2.0;
+    typingSound.play();
     const newValue = event.target.value;
 
     const isKorean = /[\u3131-\uD79D]/.test(newValue);
 
     if (
       !isKorean &&
-      (newValue.length > selectedSentence?.content.length ||
-        !selectedSentence?.content.startsWith(newValue))
+      (newValue.length > (selectedSentence?.content?.length || 0) ||
+        !selectedSentence?.content?.startsWith(newValue))
     ) {
       setShake(true);
       setTimeout(() => setShake(false), 500);
       return;
     }
     setInputText(newValue);
-    typingSound.play();
   };
 
   useEffect(() => {
@@ -113,7 +121,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
         inputRef.current?.focus();
       }, 500);
     }
-  }, [userId]);
+  }, [userId, selectedSentence]);
 
   const onNext = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -124,16 +132,16 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
     setInputText("");
     refreshRandom();
     setIsFadingIn(true);
-    setTimeout(() => {
-      setIsFadingIn(false); // End fade-in animation
-      isFetchingRef.current = false;
-    }, 1000);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    setIsFadingIn(false);
+    isFetchingRef.current = false;
   }, [refreshRandom]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Tab") {
         event.preventDefault();
+        console.log("next");
         onNext();
       }
 
@@ -196,7 +204,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
         }}
         ref={originalTextRef}
       >
-        {_originalText}
+        {selectedSentence?.content}
       </div>
       <textarea
         ref={inputRef}

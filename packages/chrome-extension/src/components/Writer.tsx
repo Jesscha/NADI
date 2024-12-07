@@ -35,13 +35,10 @@ const ConfirmModal = ({
   );
 };
 
-function uploadSentence(content: string, authorId: string) {
+async function uploadSentence(content: string, authorId: string) {
   return addDoc(collection(db, "sentences_candidates"), {
     content: content,
     authorId: authorId,
-    likes: 0,
-    likedBy: [],
-    likesByUser: {},
   }).then((docRef) => {
     return docRef.id; // 새 문장 ID 반환
   });

@@ -1,76 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Modal from "./common/Modal";
-import { useAtomValue, useSetAtom } from "jotai";
-import { sentenceAtom, userIdAtom } from "../atoms";
-import {
-  DocumentData,
-  collection,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
-import { db } from "../firebase";
-import { DEV_USER_ID } from "../constants";
+import { useSetAtom } from "jotai";
+import { sentenceAtom } from "../atoms";
 
-async function getLikedSentencesByUser(userId: string) {
-  const q = query(
-    collection(db, "sentences"),
-    where("likedBy", "array-contains", userId)
-  );
-  const querySnapshot = await getDocs(q);
-  const sentences = querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-  return sentences;
-}
-
-async function getMySentencesByUser(userId: string) {
-  const q_candidates = query(
-    collection(db, "sentences_candidates"),
-    where("authorId", "==", userId)
-  );
-  const querySnapshot_candidates = await getDocs(q_candidates);
-  const sentencesCandidates = querySnapshot_candidates.docs.map((doc) => ({
-    id: doc.id,
-    isCandidate: true,
-    ...doc.data(),
-  }));
-
-  const q = query(collection(db, "sentences"), where("authorId", "==", userId));
-  const querySnapshot = await getDocs(q);
-  const sentences = querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-
-  return [...sentences, ...sentencesCandidates];
-}
+import { useDashboard } from "../hooks/useDashboard";
 
 export const DashboardModalButton = ({
   moveScroll,
 }: {
   moveScroll: () => void;
 }) => {
-  const userId = useAtomValue(userIdAtom);
   const [isOpen, setIsOpen] = useState(false);
-  const [likedSentences, setLikedSentences] = useState<DocumentData[]>([]);
-  const [mySentences, setMySentences] = useState<DocumentData[]>([]);
   const setSelectedSentence = useSetAtom(sentenceAtom);
-
-  useEffect(() => {
-    if (isOpen) {
-      getLikedSentencesByUser(userId?.userId || DEV_USER_ID).then(
-        (sentences) => {
-          setLikedSentences(sentences);
-        }
-      );
-      getMySentencesByUser(userId?.userId || DEV_USER_ID).then((sentences) => {
-        setMySentences(sentences);
-      });
-    }
-  }, [isOpen, userId]);
-
+  const { likedSentences, mySentences } = useDashboard();
   return (
     <div>
       <button
@@ -106,9 +48,7 @@ export const DashboardModalButton = ({
                   <p>{sentence.content}</p>
 
                   <p className="text-sm text-gray-500">
-                    Liked{" "}
-                    {sentence.likesByUser[userId?.userId || DEV_USER_ID] || 0}{" "}
-                    times
+                    Liked {sentence.likeCount || 0} times
                   </p>
                 </button>
               ))
@@ -120,26 +60,31 @@ export const DashboardModalButton = ({
           <div>
             {mySentences.length > 0 ? (
               mySentences.map((sentence) => (
-                <button
+                <div
                   key={sentence.id}
                   className="bg-white p-4 mb-2 rounded shadow-md w-full text-start"
-                  onClick={() => {
-                    moveScroll();
-                    setIsOpen(false);
-                    setSelectedSentence(sentence);
-                  }}
+                  // onClick={() => {
+                  //   moveScroll();
+                  //   setIsOpen(false);
+                  //   setSelectedSentence({
+                  //     id: sentence.id,
+                  //     authorId: sentence.authorId,
+                  //     content: sentence.content,
+                  //     likeCount: 0,
+                  //   });
+                  // }}
                 >
                   <p>{sentence.content}</p>
                   <p className="text-sm text-gray-500">
-                    Liked by {sentence.likedBy.length} people, {sentence.likes}{" "}
-                    times in total
+                    Liked by {sentence.likeUserCount} people,{" "}
+                    {sentence.totalLikesCount} times in total
                   </p>
                   {sentence.isCandidate && (
                     <p className="text-sm text-gray-500">
                       (waiting to be published)
                     </p>
                   )}
-                </button>
+                </div>
               ))
             ) : (
               <p className="text-gray-500">No sentences written by you.</p>
