@@ -35,7 +35,7 @@ const ConfirmModal = ({
   );
 };
 
-function uploadSentence(content: string, authorId: string) {
+async function uploadSentence(content: string, authorId: string) {
   return addDoc(collection(db, "sentences_candidates"), {
     content: content,
     authorId: authorId,
