@@ -57,16 +57,61 @@ const LikeColors = [
   "darkorchid",
 ];
 
+function isKoreanComposing(target: string, input: string): boolean {
+  if (target === input) return true;
+
+  const targetChar = target.charCodeAt(0);
+  const inputChar = input.charCodeAt(0);
+
+  // Check if target is Hangul syllable
+  const isTargetKorean = targetChar >= 0xac00 && targetChar <= 0xd7a3;
+  const isInputKorean =
+    (inputChar >= 0x1100 && inputChar <= 0x11ff) || // Jamo
+    (inputChar >= 0x3130 && inputChar <= 0x318f) || // Compatibility Jamo
+    (inputChar >= 0xac00 && inputChar <= 0xd7a3); // Syllables
+
+  if (!isTargetKorean || !isInputKorean) return false;
+
+  const targetJamo = target.normalize("NFD");
+  const inputJamo = input.normalize("NFD");
+
+  // For compatibility Jamo (ㅎ), convert to the corresponding lead consonant range
+  if (inputChar >= 0x3130 && inputChar <= 0x318f) {
+    // Convert compatibility Jamo to lead consonant
+    const compatibilityToLeadConsonant: { [key: string]: string } = {
+      ㄱ: "ᄀ",
+      ㄲ: "ᄁ",
+      ㄴ: "ᄂ",
+      ㄷ: "ᄃ",
+      ㄸ: "ᄄ",
+      ㄹ: "ᄅ",
+      ㅁ: "ᄆ",
+      ㅂ: "ᄇ",
+      ㅃ: "ᄈ",
+      ㅅ: "ᄉ",
+      ㅆ: "ᄊ",
+      ㅇ: "ᄋ",
+      ㅈ: "ᄌ",
+      ㅉ: "ᄍ",
+      ㅊ: "ᄎ",
+      ㅋ: "ᄏ",
+      ㅌ: "ᄐ",
+      ㅍ: "ᄑ",
+      ㅎ: "ᄒ",
+    };
+    const convertedInput = compatibilityToLeadConsonant[input] || input;
+    return targetJamo.startsWith(convertedInput);
+  }
+
+  return targetJamo.startsWith(inputJamo);
+}
+
 export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [inputText, setInputText] = useState("");
-  const [isFadingOut, setIsFadingOut] = useState(false);
-  const [isFadingIn, setIsFadingIn] = useState(true);
   const userId = useAtomValue(userIdAtom);
   const { refreshRandom, selectedSentence } = useSentence(userId?.userId);
   const [likeCount, setLikeCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const originalTextRef = useRef<HTMLHeadingElement>(null);
-  const isFetchingRef = useRef(false);
 
   const userInfo = useAtomValue(userIdAtom);
 
@@ -78,43 +123,6 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
     }
   }, [selectedSentence, userInfo]);
 
-  const [animateBackground, setAnimateBackground] = useState(false);
-  const [shake, setShake] = useState(false);
-
-  useEffect(() => {
-    setInputText("");
-  }, [selectedSentence]);
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
-    typingSound.playbackRate = 2.0;
-    typingSound.play();
-    const newValue = event.target.value;
-
-    const isKorean = /[\u3131-\uD79D]/.test(newValue);
-
-    if (
-      !isKorean &&
-      (newValue.length > (selectedSentence?.content?.length || 0) ||
-        !selectedSentence?.content?.startsWith(newValue))
-    ) {
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      return;
-    }
-    setInputText(newValue);
-  };
-
-  useEffect(() => {
-    if (
-      inputRef.current &&
-      isVisible &&
-      isElementNotCovered(originalTextRef.current)
-    ) {
-      inputRef.current.focus();
-    }
-  }, [isVisible]);
-
   useEffect(() => {
     if (userId) {
       setTimeout(() => {
@@ -123,97 +131,43 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
     }
   }, [userId, selectedSentence]);
 
-  const onNext = useCallback(async () => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-    setIsFadingOut(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setIsFadingOut(false);
-    setInputText("");
-    refreshRandom();
-    setIsFadingIn(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setIsFadingIn(false);
-    isFetchingRef.current = false;
-  }, [refreshRandom]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Tab") {
-        event.preventDefault();
-        console.log("next");
-        onNext();
-      }
-
-      if (event.key === "Enter") {
-        event.preventDefault();
-        if (selectedSentence?.content.trim() === inputText.trim()) {
-          completeSound.play();
-          triggerAnimation();
-          likeSentence(
-            selectedSentence?.id || "",
-            userInfo?.userId || DEV_USER_ID
-          );
-          setInputText("");
-          setTimeout(() => {
-            setLikeCount((prev) => prev + 1);
-          }, 1000);
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [inputText, userInfo, selectedSentence, onNext]);
-
-  const triggerAnimation = () => {
-    setAnimateBackground(true);
-    setTimeout(() => setAnimateBackground(false), 1000);
-  };
-
   return (
     <div
-      className={classNames(
-        "flex flex-col items-start justify-center gap-[48px]  relative",
-        {
-          "animate-shake": shake,
-        }
-      )}
+      className="relative min-h-[100px] p-4"
+      onClick={() => inputRef.current?.focus()}
     >
-      <div
-        className={classNames(
-          "font-lora text-[24px] w-[100%] relative h-[100%] z-1",
-          {
-            "animate-fillBackground": animateBackground,
-            "animate-fadeIn": isFadingIn,
-            "animate-fadeOut": isFadingOut,
-          }
-        )}
-        style={{
-          color: "transparent",
-          backgroundClip: "text",
-          WebkitBackgroundClip: "text",
-          backgroundImage: `linear-gradient(to right,${
-            LikeColors[likeCount % LikeColors.length]
-          } 50%, ${LikeColors[(likeCount + 1) % LikeColors.length]} 50%)`,
-          backgroundSize: "200% 100%",
-          display: "inline-block",
-        }}
-        ref={originalTextRef}
-      >
-        {selectedSentence?.content}
-      </div>
       <textarea
         ref={inputRef}
         value={inputText}
-        onChange={handleInputChange}
-        className={classNames(
-          "font-lora focus:outline-none bg-transparent w-[100%] h-[100%] text-[24px] z-10 resize-none absolute top-0 left-0"
-        )}
+        onChange={(e) => setInputText(e.target.value)}
+        className="opacity-0 absolute w-full h-full"
+        autoFocus
       />
+      <div className="relative text-2xl">
+        {"한글 로 ".split("").map((char, index) => {
+          if (index < inputText.length) {
+            const inputChar = inputText[index];
+            if (inputChar === char || isKoreanComposing(char, inputChar)) {
+              return (
+                <span key={index} className="text-black">
+                  {inputChar}
+                </span>
+              );
+            } else {
+              return (
+                <span key={index} className="text-red-500">
+                  {inputChar?.trim() ? inputChar : char}
+                </span>
+              );
+            }
+          }
+          return (
+            <span key={index} className="text-gray-400">
+              {char}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 };
