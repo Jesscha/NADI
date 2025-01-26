@@ -1,36 +1,24 @@
-import React, {
-  Fragment,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import { useAtomValue } from "jotai";
 import { userIdAtom } from "../atoms";
-import { DEV_USER_ID } from "../constants";
 import { doc, runTransaction } from "firebase/firestore";
 import { db } from "../firebase";
 import useSentence from "../hooks/useSentence";
-import { isElementNotCovered } from "../utils";
 
 const completeSound = new Audio("/activation-sound.mp3");
 
 async function likeSentence(sentenceId: string, userId: string) {
-  console.log("likeSentence", sentenceId, userId);
-
   const likesRef = doc(db, "likes", userId);
   await runTransaction(db, async (transaction) => {
-    console.log("transaction");
     const docSnapshot = await transaction.get(likesRef);
-    console.log("docSnapshot", docSnapshot);
     let data = {} as {
       userId: string;
       likedSentences: {
         [sentenceId: string]: number;
       };
     };
-    console.log("data", data);
+
     if (!docSnapshot.exists()) {
       transaction.set(likesRef, {
         userId,
@@ -50,8 +38,6 @@ async function likeSentence(sentenceId: string, userId: string) {
     }
     data.likedSentences[sentenceId] =
       (data.likedSentences[sentenceId] || 0) + 1;
-
-    console.log("data", data);
 
     transaction.update(likesRef, data);
   });
@@ -152,6 +138,12 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [isEarlyEnter, setIsEarlyEnter] = useState(false);
   const earlyEnterTimeoutRef = useRef<NodeJS.Timeout>();
 
+  useEffect(() => {
+    if (isVisible) {
+      inputRef.current?.focus();
+    }
+  }, [isVisible]);
+
   const userInfo = useAtomValue(userIdAtom);
 
   useEffect(() => {
@@ -224,11 +216,25 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
       <textarea
         ref={inputRef}
         value={inputText}
-        onChange={(e) => setInputText(e.target.value)}
+        onChange={(e) => {
+          const newValue = e.target.value;
+          if (
+            selectedSentence &&
+            newValue.length <= selectedSentence.content.length
+          ) {
+            setInputText(newValue);
+          }
+        }}
         onKeyDown={(e) => {
+          if (e.key === "Tab") {
+            e.preventDefault();
+            refreshRandom();
+            setInputText("");
+            return;
+          }
+
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-
             if (selectedSentence?.content !== inputText) {
               setIsEarlyEnter(true);
               return;
@@ -236,6 +242,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
 
             if (selectedSentence && userId) {
               likeSentence(selectedSentence?.id, userId?.userId);
+              completeSound.play();
               // moveTextBackward();
               setInputText("");
               setIsLikeAnimating(true);
@@ -249,7 +256,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
         className="opacity-0 absolute w-full h-full"
         autoFocus
       />
-      <div className="relative text-2xl flex items-center">
+      <div className="relative text-2xl flex items-center flex-wrap">
         {selectedSentence?.content.split("").map((char, index) => {
           const isNoInput = inputText.length === 0;
           if (index < inputText.length) {
