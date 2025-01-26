@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  Fragment,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import classNames from "classnames";
 import { useAtomValue } from "jotai";
 import { userIdAtom } from "../atoms";
@@ -11,15 +17,20 @@ import { isElementNotCovered } from "../utils";
 const completeSound = new Audio("/activation-sound.mp3");
 
 async function likeSentence(sentenceId: string, userId: string) {
+  console.log("likeSentence", sentenceId, userId);
+
   const likesRef = doc(db, "likes", userId);
   await runTransaction(db, async (transaction) => {
+    console.log("transaction");
     const docSnapshot = await transaction.get(likesRef);
+    console.log("docSnapshot", docSnapshot);
     let data = {} as {
       userId: string;
       likedSentences: {
         [sentenceId: string]: number;
       };
     };
+    console.log("data", data);
     if (!docSnapshot.exists()) {
       transaction.set(likesRef, {
         userId,
@@ -39,6 +50,8 @@ async function likeSentence(sentenceId: string, userId: string) {
     }
     data.likedSentences[sentenceId] =
       (data.likedSentences[sentenceId] || 0) + 1;
+
+    console.log("data", data);
 
     transaction.update(likesRef, data);
   });
@@ -106,12 +119,26 @@ function isKoreanComposing(target: string, input: string): boolean {
   return targetJamo.startsWith(inputJamo);
 }
 
+const Cursor = ({ isFocused }: { isFocused: boolean }) => {
+  if (!isFocused) return null;
+
+  return (
+    <div
+      className="animate-blink inline-block h-[1em]"
+      style={{ outline: "1px solid #9CA3AF" }}
+    ></div>
+  );
+};
+
 export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [inputText, setInputText] = useState("");
   const userId = useAtomValue(userIdAtom);
   const { refreshRandom, selectedSentence } = useSentence(userId?.userId);
   const [likeCount, setLikeCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  console.log(likeCount);
 
   const userInfo = useAtomValue(userIdAtom);
 
@@ -134,39 +161,76 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   return (
     <div
       className="relative min-h-[100px] p-4"
-      onClick={() => inputRef.current?.focus()}
+      onClick={() => {
+        inputRef.current?.focus();
+      }}
+      onFocus={() => setIsInputFocused(true)}
+      onBlur={() => setIsInputFocused(false)}
     >
       <textarea
         ref={inputRef}
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (selectedSentence && userId) {
+              likeSentence(selectedSentence?.id, userId?.userId);
+              setTimeout(() => {
+                setLikeCount(likeCount + 1);
+              }, 1000);
+            }
+          }
+        }}
         className="opacity-0 absolute w-full h-full"
         autoFocus
       />
-      <div className="relative text-2xl">
-        {"한글 로 ".split("").map((char, index) => {
+      <div className="relative text-2xl flex items-center">
+        {selectedSentence?.content.split("").map((char, index) => {
+          const isNoInput = inputText.length === 0;
           if (index < inputText.length) {
             const inputChar = inputText[index];
+            const isLastChar = index === inputText.length - 1;
             if (inputChar === char || isKoreanComposing(char, inputChar)) {
               return (
-                <span key={index} className="text-black">
-                  {inputChar}
+                <span
+                  key={index}
+                  className="text-black inline-flex items-center"
+                >
+                  {inputChar === " " ? "\u00A0" : inputChar}
+                  {isLastChar && <Cursor isFocused={isInputFocused} />}
                 </span>
               );
             } else {
               return (
-                <span key={index} className="text-red-500">
-                  {inputChar?.trim() ? inputChar : char}
+                <span
+                  key={index}
+                  className="text-red-500 inline-flex items-center"
+                >
+                  {inputChar?.trim()
+                    ? inputChar
+                    : char === " "
+                    ? "\u00A0"
+                    : char}
+                  {isLastChar && <Cursor isFocused={isInputFocused} />}
                 </span>
               );
             }
           }
           return (
-            <span key={index} className="text-gray-400">
-              {char}
-            </span>
+            <Fragment key={index}>
+              {isNoInput && index === 0 && (
+                <Cursor isFocused={isInputFocused} />
+              )}
+              <span className="text-gray-400 ">
+                {char === " " ? "\u00A0" : char}
+              </span>
+            </Fragment>
           );
         })}
+        <div className="text-sm absolute right-[-20px] top-[-10px]">
+          {likeCount > 0 && `+${likeCount}`}
+        </div>
       </div>
     </div>
   );

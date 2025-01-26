@@ -5,7 +5,7 @@ module.exports = {
     extend: {
       animation: {
         bounce: "bounce 0.3s ease",
-        blink: "blink 1.5s ease-in-out infinite",
+        blink: "blink 1s ease-in-out infinite",
         waterDrop: "waterDrop 0.5s ease-out",
         ripple: "ripple 1s ease-in-out",
         wave: "wave 5s infinite linear",
@@ -21,8 +21,9 @@ module.exports = {
           "100%": { transform: "translateY(0)" },
         },
         blink: {
-          "0%, 100%": { color: "black" },
-          "50%": { color: "transparent" },
+          "0%": { opacity: "0" },
+          "50%": { opacity: "1" },
+          "100%": { opacity: "0" },
         },
         waterDrop: {
           "0%": { transform: "scale(1)", opacity: "1" },
