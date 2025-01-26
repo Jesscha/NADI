@@ -1,12 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import { useAtomValue } from "jotai";
 import { userIdAtom } from "../atoms";
-import { DEV_USER_ID } from "../constants";
 import { doc, runTransaction } from "firebase/firestore";
 import { db } from "../firebase";
 import useSentence from "../hooks/useSentence";
-import { isElementNotCovered } from "../utils";
 
 const completeSound = new Audio("/activation-sound.mp3");
 
@@ -20,6 +18,7 @@ async function likeSentence(sentenceId: string, userId: string) {
         [sentenceId: string]: number;
       };
     };
+
     if (!docSnapshot.exists()) {
       transaction.set(likesRef, {
         userId,
@@ -57,16 +56,93 @@ const LikeColors = [
   "darkorchid",
 ];
 
+function isKoreanComposing(target: string, input: string): boolean {
+  if (target === input) return true;
+
+  const targetChar = target.charCodeAt(0);
+  const inputChar = input.charCodeAt(0);
+
+  // Check if target is Hangul syllable
+  const isTargetKorean = targetChar >= 0xac00 && targetChar <= 0xd7a3;
+  const isInputKorean =
+    (inputChar >= 0x1100 && inputChar <= 0x11ff) || // Jamo
+    (inputChar >= 0x3130 && inputChar <= 0x318f) || // Compatibility Jamo
+    (inputChar >= 0xac00 && inputChar <= 0xd7a3); // Syllables
+
+  if (!isTargetKorean || !isInputKorean) return false;
+
+  const targetJamo = target.normalize("NFD");
+  const inputJamo = input.normalize("NFD");
+
+  // For compatibility Jamo (ㅎ), convert to the corresponding lead consonant range
+  if (inputChar >= 0x3130 && inputChar <= 0x318f) {
+    // Convert compatibility Jamo to lead consonant
+    const compatibilityToLeadConsonant: { [key: string]: string } = {
+      ㄱ: "ᄀ",
+      ㄲ: "ᄁ",
+      ㄴ: "ᄂ",
+      ㄷ: "ᄃ",
+      ㄸ: "ᄄ",
+      ㄹ: "ᄅ",
+      ㅁ: "ᄆ",
+      ㅂ: "ᄇ",
+      ㅃ: "ᄈ",
+      ㅅ: "ᄉ",
+      ㅆ: "ᄊ",
+      ㅇ: "ᄋ",
+      ㅈ: "ᄌ",
+      ㅉ: "ᄍ",
+      ㅊ: "ᄎ",
+      ㅋ: "ᄏ",
+      ㅌ: "ᄐ",
+      ㅍ: "ᄑ",
+      ㅎ: "ᄒ",
+    };
+    const convertedInput = compatibilityToLeadConsonant[input] || input;
+    return targetJamo.startsWith(convertedInput);
+  }
+
+  return targetJamo.startsWith(inputJamo);
+}
+
+const Cursor = ({ isFocused }: { isFocused: boolean }) => {
+  if (!isFocused) return null;
+
+  return (
+    <div
+      className="animate-blink inline-block h-[1em]"
+      style={{ outline: "1px solid #9CA3AF" }}
+    ></div>
+  );
+};
+
+const getGlowStyle = (likeCount: number) => {
+  const colorIndex = Math.min(likeCount, LikeColors.length - 1);
+  const color = LikeColors[colorIndex];
+  const intensity = Math.min(likeCount * 2, 20); // Cap the glow intensity
+  return {
+    textShadow: `0 0 ${intensity}px ${color}`,
+    color: likeCount > 0 ? color : undefined,
+    transition: "text-shadow 0.3s ease, color 0.3s ease",
+  };
+};
+
 export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [inputText, setInputText] = useState("");
-  const [isFadingOut, setIsFadingOut] = useState(false);
-  const [isFadingIn, setIsFadingIn] = useState(true);
   const userId = useAtomValue(userIdAtom);
   const { refreshRandom, selectedSentence } = useSentence(userId?.userId);
   const [likeCount, setLikeCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const originalTextRef = useRef<HTMLHeadingElement>(null);
-  const isFetchingRef = useRef(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isLikeAnimating, setIsLikeAnimating] = useState(false);
+  const [isEarlyEnter, setIsEarlyEnter] = useState(false);
+  const earlyEnterTimeoutRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    if (isVisible) {
+      inputRef.current?.focus();
+    }
+  }, [isVisible]);
 
   const userInfo = useAtomValue(userIdAtom);
 
@@ -78,43 +154,6 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
     }
   }, [selectedSentence, userInfo]);
 
-  const [animateBackground, setAnimateBackground] = useState(false);
-  const [shake, setShake] = useState(false);
-
-  useEffect(() => {
-    setInputText("");
-  }, [selectedSentence]);
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const typingSound = new Audio("/short-typing.mp3"); // Ensure you have a typing sound file
-    typingSound.playbackRate = 2.0;
-    typingSound.play();
-    const newValue = event.target.value;
-
-    const isKorean = /[\u3131-\uD79D]/.test(newValue);
-
-    if (
-      !isKorean &&
-      (newValue.length > (selectedSentence?.content?.length || 0) ||
-        !selectedSentence?.content?.startsWith(newValue))
-    ) {
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      return;
-    }
-    setInputText(newValue);
-  };
-
-  useEffect(() => {
-    if (
-      inputRef.current &&
-      isVisible &&
-      isElementNotCovered(originalTextRef.current)
-    ) {
-      inputRef.current.focus();
-    }
-  }, [isVisible]);
-
   useEffect(() => {
     if (userId) {
       setTimeout(() => {
@@ -123,97 +162,150 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
     }
   }, [userId, selectedSentence]);
 
-  const onNext = useCallback(async () => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-    setIsFadingOut(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setIsFadingOut(false);
-    setInputText("");
-    refreshRandom();
-    setIsFadingIn(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setIsFadingIn(false);
-    isFetchingRef.current = false;
-  }, [refreshRandom]);
-
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Tab") {
-        event.preventDefault();
-        console.log("next");
-        onNext();
+    if (isEarlyEnter) {
+      if (earlyEnterTimeoutRef.current) {
+        clearTimeout(earlyEnterTimeoutRef.current);
       }
-
-      if (event.key === "Enter") {
-        event.preventDefault();
-        if (selectedSentence?.content.trim() === inputText.trim()) {
-          completeSound.play();
-          triggerAnimation();
-          likeSentence(
-            selectedSentence?.id || "",
-            userInfo?.userId || DEV_USER_ID
-          );
-          setInputText("");
-          setTimeout(() => {
-            setLikeCount((prev) => prev + 1);
-          }, 1000);
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
+      earlyEnterTimeoutRef.current = setTimeout(() => {
+        setIsEarlyEnter(false);
+      }, 2000);
+    }
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      if (earlyEnterTimeoutRef.current) {
+        clearTimeout(earlyEnterTimeoutRef.current);
+      }
     };
-  }, [inputText, userInfo, selectedSentence, onNext]);
+  }, [isEarlyEnter]);
 
-  const triggerAnimation = () => {
-    setAnimateBackground(true);
-    setTimeout(() => setAnimateBackground(false), 1000);
-  };
+  // const moveTextBackward = useCallback(() => {
+  //   if (inputText === "") {
+  //     return;
+  //   }
+  //   requestAnimationFrame(() => {
+  //     setInputText((prevText) => {
+  //       const newText = prevText.slice(0, -1);
+  //       if (newText.length > 0) {
+  //         moveTextBackward();
+  //       }
+  //       return newText;
+  //     });
+  //   });
+  // }, [inputText]);
 
   return (
     <div
-      className={classNames(
-        "flex flex-col items-start justify-center gap-[48px]  relative",
-        {
-          "animate-shake": shake,
-        }
-      )}
+      className="relative min-h-[100px] p-4"
+      onClick={() => {
+        inputRef.current?.focus();
+      }}
+      onFocus={() => setIsInputFocused(true)}
+      onBlur={() => setIsInputFocused(false)}
     >
-      <div
-        className={classNames(
-          "font-lora text-[24px] w-[100%] relative h-[100%] z-1",
-          {
-            "animate-fillBackground": animateBackground,
-            "animate-fadeIn": isFadingIn,
-            "animate-fadeOut": isFadingOut,
-          }
-        )}
-        style={{
-          color: "transparent",
-          backgroundClip: "text",
-          WebkitBackgroundClip: "text",
-          backgroundImage: `linear-gradient(to right,${
-            LikeColors[likeCount % LikeColors.length]
-          } 50%, ${LikeColors[(likeCount + 1) % LikeColors.length]} 50%)`,
-          backgroundSize: "200% 100%",
-          display: "inline-block",
-        }}
-        ref={originalTextRef}
-      >
-        {selectedSentence?.content}
+      <div className="absolute -top-8 left-0 w-full">
+        <div
+          className={classNames(
+            "text-sm text-orange-300 text-center",
+            "transition-opacity duration-300",
+            isEarlyEnter ? "opacity-100" : "opacity-0"
+          )}
+        >
+          Complete the word to like (or press Tab to skip)
+        </div>
       </div>
       <textarea
         ref={inputRef}
         value={inputText}
-        onChange={handleInputChange}
-        className={classNames(
-          "font-lora focus:outline-none bg-transparent w-[100%] h-[100%] text-[24px] z-10 resize-none absolute top-0 left-0"
-        )}
+        onChange={(e) => {
+          const newValue = e.target.value;
+          if (
+            selectedSentence &&
+            newValue.length <= selectedSentence.content.length
+          ) {
+            setInputText(newValue);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Tab") {
+            e.preventDefault();
+            refreshRandom();
+            setInputText("");
+            return;
+          }
+
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (selectedSentence?.content !== inputText) {
+              setIsEarlyEnter(true);
+              return;
+            }
+
+            if (selectedSentence && userId) {
+              likeSentence(selectedSentence?.id, userId?.userId);
+              completeSound.play();
+              // moveTextBackward();
+              setInputText("");
+              setIsLikeAnimating(true);
+              setLikeCount(likeCount + 1);
+              setTimeout(() => {
+                setIsLikeAnimating(false);
+              }, 1000);
+            }
+          }
+        }}
+        className="opacity-0 absolute w-full h-full"
+        autoFocus
       />
+      <div className="relative text-2xl flex items-center flex-wrap">
+        {selectedSentence?.content.split("").map((char, index) => {
+          const isNoInput = inputText.length === 0;
+          if (index < inputText.length) {
+            const inputChar = inputText[index];
+            const isLastChar = index === inputText.length - 1;
+            if (inputChar === char || isKoreanComposing(char, inputChar)) {
+              return (
+                <span key={index} className="inline-flex items-center">
+                  {inputChar === " " ? "\u00A0" : inputChar}
+                  {isLastChar && <Cursor isFocused={isInputFocused} />}
+                </span>
+              );
+            } else {
+              return (
+                <span
+                  key={index}
+                  className="text-red-500 inline-flex items-center"
+                >
+                  {inputChar?.trim()
+                    ? inputChar
+                    : char === " "
+                    ? "\u00A0"
+                    : char}
+                  {isLastChar && <Cursor isFocused={isInputFocused} />}
+                </span>
+              );
+            }
+          }
+          return (
+            <Fragment key={index}>
+              {isNoInput && index === 0 && (
+                <Cursor isFocused={isInputFocused} />
+              )}
+              <span className="text-gray-400">
+                {char === " " ? "\u00A0" : char}
+              </span>
+            </Fragment>
+          );
+        })}
+        <div
+          className={classNames(
+            "text-sm absolute right-[-20px] top-[-10px]",
+            isLikeAnimating && "animate-ping-once"
+          )}
+          style={getGlowStyle(likeCount)}
+        >
+          {likeCount > 0 && `+${likeCount}`}
+        </div>
+      </div>
     </div>
   );
 };
