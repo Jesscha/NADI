@@ -13,6 +13,7 @@ module.exports = {
         fadeIn: "fadeIn 1s ease-in-out",
         fadeOut: "fadeOut 1s ease-in-out",
         shake: "shake 0.5s ease-in-out",
+        "ping-once": "ping-once 0.5s ease-in-out",
       },
       keyframes: {
         bounce: {
@@ -58,6 +59,10 @@ module.exports = {
           "50%": { transform: "translateY(5px)" },
           "75%": { transform: "translateY(-5px)" },
           "100%": { transform: "translateY(0)" },
+        },
+        "ping-once": {
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.2)", opacity: "0.8" },
         },
       },
     },

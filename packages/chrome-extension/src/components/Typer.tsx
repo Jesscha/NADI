@@ -130,6 +130,17 @@ const Cursor = ({ isFocused }: { isFocused: boolean }) => {
   );
 };
 
+const getGlowStyle = (likeCount: number) => {
+  const colorIndex = Math.min(likeCount, LikeColors.length - 1);
+  const color = LikeColors[colorIndex];
+  const intensity = Math.min(likeCount * 2, 20); // Cap the glow intensity
+  return {
+    textShadow: `0 0 ${intensity}px ${color}`,
+    color: likeCount > 0 ? color : undefined,
+    transition: "text-shadow 0.3s ease, color 0.3s ease",
+  };
+};
+
 export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [inputText, setInputText] = useState("");
   const userId = useAtomValue(userIdAtom);
@@ -137,8 +148,9 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [likeCount, setLikeCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isInputFocused, setIsInputFocused] = useState(false);
-
-  console.log(likeCount);
+  const [isLikeAnimating, setIsLikeAnimating] = useState(false);
+  const [isEarlyEnter, setIsEarlyEnter] = useState(false);
+  const earlyEnterTimeoutRef = useRef<NodeJS.Timeout>();
 
   const userInfo = useAtomValue(userIdAtom);
 
@@ -158,6 +170,37 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
     }
   }, [userId, selectedSentence]);
 
+  useEffect(() => {
+    if (isEarlyEnter) {
+      if (earlyEnterTimeoutRef.current) {
+        clearTimeout(earlyEnterTimeoutRef.current);
+      }
+      earlyEnterTimeoutRef.current = setTimeout(() => {
+        setIsEarlyEnter(false);
+      }, 2000);
+    }
+    return () => {
+      if (earlyEnterTimeoutRef.current) {
+        clearTimeout(earlyEnterTimeoutRef.current);
+      }
+    };
+  }, [isEarlyEnter]);
+
+  // const moveTextBackward = useCallback(() => {
+  //   if (inputText === "") {
+  //     return;
+  //   }
+  //   requestAnimationFrame(() => {
+  //     setInputText((prevText) => {
+  //       const newText = prevText.slice(0, -1);
+  //       if (newText.length > 0) {
+  //         moveTextBackward();
+  //       }
+  //       return newText;
+  //     });
+  //   });
+  // }, [inputText]);
+
   return (
     <div
       className="relative min-h-[100px] p-4"
@@ -167,6 +210,17 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
       onFocus={() => setIsInputFocused(true)}
       onBlur={() => setIsInputFocused(false)}
     >
+      <div className="absolute -top-8 left-0 w-full">
+        <div
+          className={classNames(
+            "text-sm text-orange-300 text-center",
+            "transition-opacity duration-300",
+            isEarlyEnter ? "opacity-100" : "opacity-0"
+          )}
+        >
+          Complete the word to like (or press Tab to skip)
+        </div>
+      </div>
       <textarea
         ref={inputRef}
         value={inputText}
@@ -174,10 +228,20 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
+
+            if (selectedSentence?.content !== inputText) {
+              setIsEarlyEnter(true);
+              return;
+            }
+
             if (selectedSentence && userId) {
               likeSentence(selectedSentence?.id, userId?.userId);
+              // moveTextBackward();
+              setInputText("");
+              setIsLikeAnimating(true);
+              setLikeCount(likeCount + 1);
               setTimeout(() => {
-                setLikeCount(likeCount + 1);
+                setIsLikeAnimating(false);
               }, 1000);
             }
           }
@@ -193,10 +257,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
             const isLastChar = index === inputText.length - 1;
             if (inputChar === char || isKoreanComposing(char, inputChar)) {
               return (
-                <span
-                  key={index}
-                  className="text-black inline-flex items-center"
-                >
+                <span key={index} className="inline-flex items-center">
                   {inputChar === " " ? "\u00A0" : inputChar}
                   {isLastChar && <Cursor isFocused={isInputFocused} />}
                 </span>
@@ -222,13 +283,19 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
               {isNoInput && index === 0 && (
                 <Cursor isFocused={isInputFocused} />
               )}
-              <span className="text-gray-400 ">
+              <span className="text-gray-400">
                 {char === " " ? "\u00A0" : char}
               </span>
             </Fragment>
           );
         })}
-        <div className="text-sm absolute right-[-20px] top-[-10px]">
+        <div
+          className={classNames(
+            "text-sm absolute right-[-20px] top-[-10px]",
+            isLikeAnimating && "animate-ping-once"
+          )}
+          style={getGlowStyle(likeCount)}
+        >
           {likeCount > 0 && `+${likeCount}`}
         </div>
       </div>
