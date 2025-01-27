@@ -26,6 +26,7 @@ const queryCandidateSentence = async () => {
   const q_candidates = query(collection(db, "sentences_candidates"));
   const querySnapshot_candidates = await getDocs(q_candidates);
   return querySnapshot_candidates.docs.map((doc) => ({
+    id: doc.id,
     ...doc.data(),
   }));
 };
@@ -115,6 +116,8 @@ export const App = () => {
       console.error("Error during sign-out:", error);
     }
   };
+
+  console.log(candidates);
 
   return (
     <div>

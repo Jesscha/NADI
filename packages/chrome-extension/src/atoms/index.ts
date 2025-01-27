@@ -8,7 +8,7 @@ type UserInfo = {
 };
 
 // Create an atom that syncs with local storage
-const userIdAtom = atomWithStorage<UserInfo | null>("userId", null);
-const sentenceAtom = atom<SentenceWidthIdAndLikes | null>(null);
+const userInfoAtom = atomWithStorage<UserInfo | null>("userInfo", null);
+const focusedSentenceAtom = atom<SentenceWidthIdAndLikes | null>(null);
 
-export { userIdAtom, sentenceAtom };
+export { userInfoAtom, focusedSentenceAtom };

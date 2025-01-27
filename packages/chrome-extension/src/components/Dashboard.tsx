@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Modal from "./common/Modal";
 import { useSetAtom } from "jotai";
-import { sentenceAtom } from "../atoms";
+import { focusedSentenceAtom } from "../atoms";
 
 import { useDashboard } from "../hooks/useDashboard";
 
@@ -11,8 +11,10 @@ export const DashboardModalButton = ({
   moveScroll: () => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const setSelectedSentence = useSetAtom(sentenceAtom);
-  const { likedSentences, mySentences } = useDashboard();
+  const setSelectedSentence = useSetAtom(focusedSentenceAtom);
+  const { myLikedSentences, myAuthoredPassedSentences, myAuthoredCandidates } =
+    useDashboard();
+
   return (
     <div>
       <button
@@ -34,21 +36,26 @@ export const DashboardModalButton = ({
             <h2 className="text-2xl font-bold mb-4">Liked Sentences</h2>
           </div>
           <div className="mb-8">
-            {likedSentences.length > 0 ? (
-              likedSentences.map((sentence) => (
+            {myLikedSentences && myLikedSentences.length > 0 ? (
+              myLikedSentences.map((sentence) => (
                 <button
                   key={sentence.id}
                   className="bg-white p-4 mb-2 rounded shadow-md w-full text-start"
                   onClick={() => {
                     moveScroll();
                     setIsOpen(false);
-                    setSelectedSentence(sentence);
+                    setSelectedSentence({
+                      id: sentence.id,
+                      authorId: sentence.authorId,
+                      content: sentence.content,
+                      myLikedCount: sentence.myLikedCount,
+                    });
                   }}
                 >
                   <p>{sentence.content}</p>
 
                   <p className="text-sm text-gray-500">
-                    Liked {sentence.likeCount || 0} times
+                    Liked {sentence.myLikedCount || 0} times
                   </p>
                 </button>
               ))
@@ -57,37 +64,53 @@ export const DashboardModalButton = ({
             )}
           </div>
           <h2 className="text-2xl font-bold mb-4">My Sentences</h2>
-          <div>
-            {mySentences.length > 0 ? (
-              mySentences.map((sentence) => (
+          <div className="mb-8">
+            {myAuthoredPassedSentences &&
+            myAuthoredPassedSentences.length > 0 ? (
+              myAuthoredPassedSentences.map((sentence) => (
                 <div
                   key={sentence.id}
-                  className="bg-white p-4 mb-2 rounded shadow-md w-full text-start"
-                  // onClick={() => {
-                  //   moveScroll();
-                  //   setIsOpen(false);
-                  //   setSelectedSentence({
-                  //     id: sentence.id,
-                  //     authorId: sentence.authorId,
-                  //     content: sentence.content,
-                  //     likeCount: 0,
-                  //   });
-                  // }}
+                  className="bg-white p-4 mb-2 rounded shadow-md w-full text-start cursor-pointer"
+                  onClick={() => {
+                    moveScroll();
+                    setIsOpen(false);
+                    setSelectedSentence({
+                      id: sentence.id,
+                      authorId: sentence.authorId,
+                      content: sentence.content,
+                      myLikedCount: sentence.myLikedCount,
+                    });
+                  }}
                 >
                   <p>{sentence.content}</p>
                   <p className="text-sm text-gray-500">
-                    Liked by {sentence.likeUserCount} people,{" "}
+                    Liked by {sentence.likedUserCount} people,{" "}
                     {sentence.totalLikesCount} times in total
                   </p>
-                  {sentence.isCandidate && (
-                    <p className="text-sm text-gray-500">
-                      (waiting to be published)
-                    </p>
-                  )}
                 </div>
               ))
             ) : (
               <p className="text-gray-500">No sentences written by you.</p>
+            )}
+          </div>
+          <h2 className="text-2xl font-bold mb-4">
+            <div>My Candidates</div>
+            <span className="text-sm">
+              (Will be moved to My Sentences once approved)
+            </span>
+          </h2>
+          <div>
+            {myAuthoredCandidates && myAuthoredCandidates.length > 0 ? (
+              myAuthoredCandidates.map((sentence) => (
+                <div
+                  key={sentence.id}
+                  className="bg-white p-4 mb-2 rounded shadow-md w-full text-start"
+                >
+                  {sentence.content}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500">No candidates.</p>
             )}
           </div>
         </div>
