@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { db } from "../firebase";
-import { addDoc, collection } from "firebase/firestore";
 
 import { DEV_USER_ID, isDev } from "../constants";
 import { useAtomValue } from "jotai";
-import { userIdAtom } from "../atoms";
+import { userInfoAtom } from "../atoms";
 import { TypingModal } from "./common/TypingModal";
 import { isElementNotCovered } from "../utils";
+import { useMyAuthoredCandidates } from "../hooks/useMyAuthroedCandidates";
+import { uploadSentence } from "../utils/firebase";
 
 const ConfirmModal = ({
   isOpen,
@@ -35,22 +35,14 @@ const ConfirmModal = ({
   );
 };
 
-async function uploadSentence(content: string, authorId: string) {
-  return addDoc(collection(db, "sentences_candidates"), {
-    content: content,
-    authorId: authorId,
-  }).then((docRef) => {
-    return docRef.id; // 새 문장 ID 반환
-  });
-}
-
 function Writer({ isVisible }: { isVisible: boolean }) {
   const [sentence, setSentence] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFading, setIsFading] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const userInfo = useAtomValue(userIdAtom);
+  const userInfo = useAtomValue(userInfoAtom);
+  const { mutate } = useMyAuthoredCandidates();
 
   useEffect(() => {
     if (
@@ -73,6 +65,7 @@ function Writer({ isVisible }: { isVisible: boolean }) {
     try {
       const trimmedSentence = sentence.trim();
       await uploadSentence(trimmedSentence, _authId);
+      mutate();
 
       setIsFading(true);
       setTimeout(() => {

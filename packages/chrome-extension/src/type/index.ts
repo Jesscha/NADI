@@ -1,20 +1,17 @@
-export type Sentence = {
+export type SentenceBase = {
+  id: string;
   authorId: string;
   content: string;
 };
 
-export type SentenceWidthIdAndLikes = Sentence & {
+export type SentenceWidthIdAndLikes = SentenceBase & {
   id: string;
-  likeCount: number;
+  myLikedCount: number;
 };
 
-export type MySentence = Sentence & {
-  id: string;
-  authorId: string;
-  content: string;
+export type SentenceWithLikeInfo = SentenceBase & {
   totalLikesCount: number;
-  isCandidate: boolean;
-  likeUserCount: number;
+  likedUserCount: number;
   myLikedCount: number;
 };
 
@@ -23,6 +20,6 @@ export type Likes = {
 };
 
 export type UserLikes = {
-  userLikes: Likes;
+  likedSentences: Likes;
   userId: string;
 };

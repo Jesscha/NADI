@@ -1,109 +1,14 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import { useAtomValue } from "jotai";
-import { userIdAtom } from "../atoms";
-import { doc, runTransaction } from "firebase/firestore";
-import { db } from "../firebase";
-import useSentence from "../hooks/useSentence";
+import { userInfoAtom } from "../atoms";
+
+import useFocusedSentence from "../hooks/useFocusedSentence";
+import { likeSentence } from "../utils/firebase";
+import { isKoreanComposing } from "../utils/string";
+import { getGlowStyle } from "../utils/style";
 
 const completeSound = new Audio("/activation-sound.mp3");
-
-async function likeSentence(sentenceId: string, userId: string) {
-  const likesRef = doc(db, "likes", userId);
-  await runTransaction(db, async (transaction) => {
-    const docSnapshot = await transaction.get(likesRef);
-    let data = {} as {
-      userId: string;
-      likedSentences: {
-        [sentenceId: string]: number;
-      };
-    };
-
-    if (!docSnapshot.exists()) {
-      transaction.set(likesRef, {
-        userId,
-        likedSentences: {},
-      });
-      data = {
-        userId,
-        likedSentences: {},
-      };
-    } else {
-      data = docSnapshot.data() as {
-        userId: string;
-        likedSentences: {
-          [sentenceId: string]: number;
-        };
-      };
-    }
-    data.likedSentences[sentenceId] =
-      (data.likedSentences[sentenceId] || 0) + 1;
-
-    transaction.update(likesRef, data);
-  });
-}
-const LikeColors = [
-  "gray",
-  "darkred",
-  "darkorange",
-  "goldenrod",
-  "darkgreen",
-  "darkcyan",
-  "darkblue",
-  "darkviolet",
-  "darkmagenta",
-  "darkslateblue",
-  "darkorchid",
-];
-
-function isKoreanComposing(target: string, input: string): boolean {
-  if (target === input) return true;
-
-  const targetChar = target.charCodeAt(0);
-  const inputChar = input.charCodeAt(0);
-
-  // Check if target is Hangul syllable
-  const isTargetKorean = targetChar >= 0xac00 && targetChar <= 0xd7a3;
-  const isInputKorean =
-    (inputChar >= 0x1100 && inputChar <= 0x11ff) || // Jamo
-    (inputChar >= 0x3130 && inputChar <= 0x318f) || // Compatibility Jamo
-    (inputChar >= 0xac00 && inputChar <= 0xd7a3); // Syllables
-
-  if (!isTargetKorean || !isInputKorean) return false;
-
-  const targetJamo = target.normalize("NFD");
-  const inputJamo = input.normalize("NFD");
-
-  // For compatibility Jamo (ㅎ), convert to the corresponding lead consonant range
-  if (inputChar >= 0x3130 && inputChar <= 0x318f) {
-    // Convert compatibility Jamo to lead consonant
-    const compatibilityToLeadConsonant: { [key: string]: string } = {
-      ㄱ: "ᄀ",
-      ㄲ: "ᄁ",
-      ㄴ: "ᄂ",
-      ㄷ: "ᄃ",
-      ㄸ: "ᄄ",
-      ㄹ: "ᄅ",
-      ㅁ: "ᄆ",
-      ㅂ: "ᄇ",
-      ㅃ: "ᄈ",
-      ㅅ: "ᄉ",
-      ㅆ: "ᄊ",
-      ㅇ: "ᄋ",
-      ㅈ: "ᄌ",
-      ㅉ: "ᄍ",
-      ㅊ: "ᄎ",
-      ㅋ: "ᄏ",
-      ㅌ: "ᄐ",
-      ㅍ: "ᄑ",
-      ㅎ: "ᄒ",
-    };
-    const convertedInput = compatibilityToLeadConsonant[input] || input;
-    return targetJamo.startsWith(convertedInput);
-  }
-
-  return targetJamo.startsWith(inputJamo);
-}
 
 const Cursor = ({ isFocused }: { isFocused: boolean }) => {
   if (!isFocused) return null;
@@ -116,21 +21,11 @@ const Cursor = ({ isFocused }: { isFocused: boolean }) => {
   );
 };
 
-const getGlowStyle = (likeCount: number) => {
-  const colorIndex = Math.min(likeCount, LikeColors.length - 1);
-  const color = LikeColors[colorIndex];
-  const intensity = Math.min(likeCount * 2, 20); // Cap the glow intensity
-  return {
-    textShadow: `0 0 ${intensity}px ${color}`,
-    color: likeCount > 0 ? color : undefined,
-    transition: "text-shadow 0.3s ease, color 0.3s ease",
-  };
-};
-
 export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [inputText, setInputText] = useState("");
-  const userId = useAtomValue(userIdAtom);
-  const { refreshRandom, selectedSentence } = useSentence(userId?.userId);
+  const userId = useAtomValue(userInfoAtom);
+  const { refreshRandom, selectedSentence, mutateAllLikes } =
+    useFocusedSentence();
   const [likeCount, setLikeCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -144,11 +39,11 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
     }
   }, [isVisible]);
 
-  const userInfo = useAtomValue(userIdAtom);
+  const userInfo = useAtomValue(userInfoAtom);
 
   useEffect(() => {
     if (selectedSentence) {
-      setLikeCount(selectedSentence.likeCount);
+      setLikeCount(selectedSentence.myLikedCount);
     } else {
       setLikeCount(0);
     }
@@ -249,6 +144,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
               setLikeCount(likeCount + 1);
               setTimeout(() => {
                 setIsLikeAnimating(false);
+                mutateAllLikes();
               }, 1000);
             }
           }

@@ -1,31 +1,30 @@
-import useSWR from "swr";
+import { useMyAuthoredCandidates } from "./useMyAuthroedCandidates";
+import { useMemo } from "react";
 import { useAtomValue } from "jotai";
-import { userIdAtom } from "../atoms";
-import { DEV_USER_ID } from "../constants";
-import { MySentence, SentenceWidthIdAndLikes } from "../type";
-import {
-  getLikedSentencesByUser,
-  getMySentencesByUser,
-} from "../utils/dashboard";
+import { userInfoAtom } from "../atoms";
+import { useSentencesWithLikeInfo } from "./useSentencesWithLikeInfo";
 
 export function useDashboard() {
-  const userId = useAtomValue(userIdAtom);
-  const currentUserId = userId?.userId || DEV_USER_ID;
+  const userInfo = useAtomValue(userInfoAtom);
+  const { sentencesWithLikeInfo } = useSentencesWithLikeInfo();
 
-  const { data: likedSentences = [], mutate: mutateLikedSentences } = useSWR<
-    SentenceWidthIdAndLikes[]
-  >(`liked-sentences-${currentUserId}`, () =>
-    getLikedSentencesByUser(currentUserId)
-  );
+  const { data: myAuthoredCandidates } = useMyAuthoredCandidates();
 
-  const { data: mySentences = [], mutate: mutateMySentences } = useSWR<
-    MySentence[]
-  >(`my-sentences-${currentUserId}`, () => getMySentencesByUser(currentUserId));
+  const myLikedSentences = useMemo(() => {
+    return sentencesWithLikeInfo?.filter(
+      (sentence) => sentence.myLikedCount > 0
+    );
+  }, [sentencesWithLikeInfo]);
+
+  const myAuthoredPassedSentences = useMemo(() => {
+    return sentencesWithLikeInfo?.filter(
+      (sentence) => sentence.authorId === userInfo?.userId
+    );
+  }, [userInfo?.userId, sentencesWithLikeInfo]);
 
   return {
-    likedSentences,
-    mySentences,
-    mutateLikedSentences,
-    mutateMySentences,
+    myLikedSentences,
+    myAuthoredPassedSentences,
+    myAuthoredCandidates,
   };
 }

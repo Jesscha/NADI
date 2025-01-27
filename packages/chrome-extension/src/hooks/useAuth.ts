@@ -1,10 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
 import { useAtom } from "jotai";
 import { useEffect } from "react";
-import { userIdAtom } from "../atoms";
+import { userInfoAtom } from "../atoms";
 
 export const useAuth = () => {
-  const [userId, setUserId] = useAtom(userIdAtom);
+  const [userId, setUserId] = useAtom(userInfoAtom);
 
   useEffect(() => {
     chrome?.runtime?.onMessage?.addListener(async (message) => {
