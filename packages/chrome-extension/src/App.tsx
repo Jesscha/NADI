@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useRef } from "react";
 import { Typer } from "./components/Typer";
-import { SWRConfig } from "swr";
 import Writer from "./components/Writer";
 import { Instruction } from "./components/Instruction";
 import { DashboardModalButton } from "./components/Dashboard";
 
-import { LoginModal } from "./components/LoginModal";
+// import { LoginModal } from "./components/LoginModal";
+import { useIsVisible } from "./hooks/useIsVisible";
+import { SWRConfig } from "swr";
+import { useAuth } from "./hooks/useAuth";
 
 function localStorageProvider() {
   const map = new Map(JSON.parse(localStorage.getItem("app-cache") || "[]"));
@@ -18,35 +20,10 @@ function localStorageProvider() {
   return map;
 }
 
-function useIsVisible(ref: React.RefObject<HTMLElement>) {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      {
-        threshold: 1,
-      }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  return isVisible;
-}
-
 function App() {
   const typerRef = useRef<HTMLDivElement>(null);
   const writerRef = useRef<HTMLDivElement>(null);
-
+  useAuth();
   const isTyperVisible = useIsVisible(typerRef);
   const isWriterVisible = useIsVisible(writerRef);
 
@@ -79,7 +56,7 @@ function App() {
           <Writer isVisible={isWriterVisible} />
         </div>
       </div>
-      <LoginModal />
+      {/* <LoginModal /> */}
     </SWRConfig>
   );
 }
