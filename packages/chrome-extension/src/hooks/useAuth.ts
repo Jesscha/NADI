@@ -1,10 +1,13 @@
 import { v4 as uuidv4 } from "uuid";
 import { useAtom } from "jotai";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { userInfoAtom } from "../atoms";
 
 export const useAuth = () => {
   const [userId, setUserId] = useAtom(userInfoAtom);
+
+  const userIdRef = useRef(userId);
+
 
   useEffect(() => {
     chrome?.runtime?.onMessage?.addListener(async (message) => {
@@ -32,10 +35,28 @@ export const useAuth = () => {
     );
   };
 
+  
+
+
   const triggerLocalAuth = () => {
     const uuid = uuidv4();
     setUserId({ location: "local", userId: uuid });
   };
+
+
+  // TMP until solve permissions issue
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
+  useEffect(() => {
+    setTimeout(() => {
+      if (!userIdRef.current) {
+        console.log("Triggering local auth");
+        triggerLocalAuth();
+      }
+    }, 1000);
+  }, []);
+    
 
   return { triggerGoogleAuth, triggerLocalAuth, userId };
 };

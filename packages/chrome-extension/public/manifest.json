@@ -9,7 +9,7 @@
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": ["storage", "activeTab", "scripting", "offscreen", "nativeMessaging"],
+  "permissions": [],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://firestore.googleapis.com https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://apis.google.com https://www.gstatic.com https://www.googleapis.com"
   },  
