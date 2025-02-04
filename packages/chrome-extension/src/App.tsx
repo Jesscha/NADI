@@ -6,19 +6,9 @@ import { DashboardModalButton } from "./components/Dashboard";
 
 // import { LoginModal } from "./components/LoginModal";
 import { useIsVisible } from "./hooks/useIsVisible";
-import { SWRConfig } from "swr";
 import { useAuth } from "./hooks/useAuth";
+import { SRWProvider } from "./provider";
 
-function localStorageProvider() {
-  const map = new Map(JSON.parse(localStorage.getItem("app-cache") || "[]"));
-
-  window.addEventListener("beforeunload", () => {
-    const appCache = JSON.stringify(Array.from(map.entries()));
-    localStorage.setItem("app-cache", appCache);
-  });
-
-  return map;
-}
 
 function App() {
   const typerRef = useRef<HTMLDivElement>(null);
@@ -34,8 +24,7 @@ function App() {
   };
 
   return (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <SWRConfig value={{ provider: localStorageProvider as any }}>
+    <SRWProvider>
       <div className="fixed top-0 left-0 z-10">
         <DashboardModalButton moveScroll={moveScrollToTyper} />
       </div>
@@ -57,7 +46,7 @@ function App() {
         </div>
       </div>
       {/* <LoginModal /> */}
-    </SWRConfig>
+    </SRWProvider>
   );
 }
 

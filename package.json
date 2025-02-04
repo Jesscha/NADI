@@ -5,7 +5,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "pnpm -r run build"
+    "build": "pnpm -r run build",
+    "dev:nadi": "pnpm --filter nadi run dev",
+    "dev:admin": "pnpm --filter admin run dev"
   },
   "dependencies": {
     "firebase": "^10.14.1"
