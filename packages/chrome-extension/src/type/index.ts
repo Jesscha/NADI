@@ -1,25 +1,27 @@
+
+type SentenceId = string;
+type UserId = string;
+
 export type SentenceBase = {
-  id: string;
-  authorId: string;
+  id: SentenceId;
+  authorId: UserId;
   content: string;
 };
 
-export type SentenceWidthIdAndLikes = SentenceBase & {
-  id: string;
+export type SentenceWidthMyLiked = SentenceBase & {
   myLikedCount: number;
 };
 
-export type SentenceWithLikeInfo = SentenceBase & {
+export type SentenceWithLikeInfo = SentenceWidthMyLiked & {
   totalLikesCount: number;
   likedUserCount: number;
-  myLikedCount: number;
 };
 
-export type Likes = {
-  [sentenceId: string]: number;
+export type LikedCountBySentence = {
+  [sentenceId: SentenceId]: number;
 };
 
 export type UserLikes = {
-  likedSentences: Likes;
-  userId: string;
+  likedSentences: LikedCountBySentence;
+  userId: UserId;
 };

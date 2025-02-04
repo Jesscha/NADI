@@ -1,9 +1,9 @@
 import {
-  Likes,
+  LikedCountBySentence,
   SentenceBase,
   UserLikes,
   SentenceWithLikeInfo,
-  SentenceWidthIdAndLikes,
+  SentenceWidthMyLiked,
 } from "../type";
 import {
   collection,
@@ -44,7 +44,7 @@ export const fetchAllLikes = async (): Promise<UserLikes[]> => {
 
 export const fetchUserLikedSentences = async (
   userId: string
-): Promise<Likes> => {
+): Promise<LikedCountBySentence> => {
   try {
     const q = query(collection(db, "likes"), where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
@@ -74,7 +74,7 @@ export async function getLikedSentencesByUser(userId: string) {
       authorId: doc.data().authorId,
       content: doc.data().content,
       myLikedCount: data.likedSentences[doc.id],
-    })) as SentenceWidthIdAndLikes[];
+    })) as SentenceWidthMyLiked[];
   }
   return [];
 }

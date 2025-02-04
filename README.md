@@ -17,6 +17,6 @@ This Chrome extension replaces Chrome's default new tab screen with a custom int
 To run locally:
 
 ```bash
-bash
+pnpm install
 pnpm dev:nadi
 ```
