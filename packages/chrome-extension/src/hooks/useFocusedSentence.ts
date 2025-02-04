@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import { focusedSentenceAtom } from "../atoms";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useSentencesWithLikeInfo } from "./useSentencesWithLikeInfo";
 
 function useFocusedSentence() {
@@ -8,18 +8,18 @@ function useFocusedSentence() {
 
   const { sentencesWithLikeInfo, mutateAllLikes } = useSentencesWithLikeInfo();
 
-  const refreshRandom = () => {
+  const refreshRandom = useCallback(() => {
     if (sentencesWithLikeInfo && sentencesWithLikeInfo.length > 0) {
       const randomIndex = Math.floor(
         Math.random() * sentencesWithLikeInfo.length
       );
       setSelectedSentence(sentencesWithLikeInfo[randomIndex]);
     }
-  };
+  }, [sentencesWithLikeInfo.length, setSelectedSentence]);
 
   useEffect(() => {
     refreshRandom();
-  }, [sentencesWithLikeInfo.length]);
+  }, [refreshRandom]);
 
   return { refreshRandom, selectedSentence, mutateAllLikes };
 }

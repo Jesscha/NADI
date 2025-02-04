@@ -134,6 +134,6 @@ export async function uploadSentence(content: string, authorId: string) {
     content: content,
     authorId: authorId,
   }).then((docRef) => {
-    return docRef.id; // 새 문장 ID 반환
+    return docRef.id; 
   });
 }
