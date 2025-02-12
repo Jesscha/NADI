@@ -1,0 +1,36 @@
+{
+  "name": "admin",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "> TODO: description",
+  "author": "Jesscha <jessecha222@gmail.com>",
+  "homepage": "https://github.com/Jesscha/NADI#readme",
+  "license": "ISC",
+  "main": "lib/admin.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.2",
+    "@types/react": "^18.3.10",
+    "@types/react-dom": "^18.3.0"
+  },
+  "repository": {
+    "url": "git+https://github.com/Jesscha/NADI.git"
+  },
+  "scripts": {
+    "test": "node ./__tests__/admin.test.js",
+    "dev": "vite"
+  },
+  "bugs": {
+    "url": "https://github.com/Jesscha/NADI/issues"
+  }
+}
