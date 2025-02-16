@@ -33,6 +33,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   const [isEarlyEnter, setIsEarlyEnter] = useState(false);
   const earlyEnterTimeoutRef = useRef<NodeJS.Timeout>();
 
+
   useEffect(() => {
     if (isVisible) {
       inputRef.current?.focus();
@@ -87,6 +88,7 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
   //     });
   //   });
   // }, [inputText]);
+  const disableOnChangeRef = useRef(false);
 
   return (
     <div
@@ -112,6 +114,9 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
         ref={inputRef}
         value={inputText}
         onChange={(e) => {
+          if (disableOnChangeRef.current) {
+            return;
+          }
           const newValue = e.target.value;
           if (
             selectedSentence &&
@@ -129,6 +134,11 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
           }
 
           if (e.key === "Enter" && !e.shiftKey) {
+            if(disableOnChangeRef.current) {
+              return;
+            }
+            disableOnChangeRef.current = true;
+            
             e.preventDefault();
             if (selectedSentence?.content !== inputText) {
               setIsEarlyEnter(true);
@@ -139,14 +149,18 @@ export const Typer = ({ isVisible }: { isVisible: boolean }) => {
               likeSentence(selectedSentence?.id, userId?.userId);
               completeSound.play();
               // moveTextBackward();
-              setInputText("");
+
               setIsLikeAnimating(true);
               setLikeCount(likeCount + 1);
+              
+              setInputText("");
               setTimeout(() => {
                 setIsLikeAnimating(false);
                 mutateAllLikes();
+                disableOnChangeRef.current = false;    
               }, 1000);
             }
+            
           }
         }}
         className="opacity-0 absolute w-full h-full"
