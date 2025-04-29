@@ -9,7 +9,6 @@ import { useIsVisible } from "./hooks/useIsVisible";
 import { useAuth } from "./hooks/useAuth";
 import { SRWProvider } from "./provider";
 
-
 function App() {
   const typerRef = useRef<HTMLDivElement>(null);
   const writerRef = useRef<HTMLDivElement>(null);
@@ -31,7 +30,7 @@ function App() {
       <div className="fixed bottom-0 right-0 z-10">
         <Instruction focusZone={isTyperVisible ? "type" : "write"} />
       </div>
-      <div className="h-screen w-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide absolute">
+      <div className="h-screen w-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide absolute  font-lora">
         <div
           ref={typerRef}
           className="snap-start h-screen flex justify-center items-center p-5"
